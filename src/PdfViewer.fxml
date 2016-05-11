@@ -8,19 +8,20 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="Controller" style = "width: 800px; height: 600px">
+<BorderPane fx:id="borderPane" xmlns:fx="http://javafx.com/fxml" fx:controller="Controller" style = "width: 800px; height: 600px">
 	<padding>
 		<Insets top="5" bottom="5" left="5" right="5" />
 	</padding>
 	<top>
 		<HBox spacing="5">
-			<Button text="Load File..." onAction="#loadFile"/>
+			<!--<Button text="Load File..." onAction="#loadFile"/>-->
 			<Label text="Zoom:"/>
 			<Button text="-" onAction="#zoomOut" />
 			<Button text="+" onAction="#zoomIn" />
 			<Button text="Zoom to fit" onAction="#zoomFit" />
-			<Button text="Zoom to width" onAction="#zoomWidth" />
+			<!--<Button text="Zoom to width" onAction="#zoomWidth" />-->
 			<Label fx:id = "currentZoomLabel" />
+			<Button text="Generate Seating Chart" onAction="#generateSeatingChart" />
 			<padding>
 				<Insets top="5" bottom="5" left="5" right="5" />
 			</padding>
@@ -32,4 +33,4 @@
 	<fx:define>
 		<ScrollPane fx:id="scroller" pannable="true" />
 	</fx:define>
-</AnchorPane>
+</BorderPane>

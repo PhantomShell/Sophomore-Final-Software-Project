@@ -7,13 +7,21 @@ import java.io.RandomAccessFile;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.util.Matrix;
 
 import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFPage;
@@ -43,10 +51,11 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
-import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -54,26 +63,31 @@ import javafx.util.Callback;
 
 public class Controller {
 
-	@FXML private Pagination pagination ;
-	@FXML private Label currentZoomLabel ;
+	@FXML private Pagination pagination;
+	@FXML private Label currentZoomLabel;
+	@FXML private BorderPane borderPane;
+	@FXML private ScrollPane scroller;
 	
-	private FileChooser fileChooser ;
-	private ObjectProperty<PDFFile> currentFile ;
-	private ObjectProperty<ImageView> currentImage ;
-	@FXML  private ScrollPane scroller ;
-	private DoubleProperty zoom ;
-	private PageDimensions currentPageDimensions ;
+	private boolean fitOnLoad;
+
+	private ObjectProperty<PDFFile> currentFile;
+	private ObjectProperty<ImageView> currentImage;
+	private DoubleProperty zoom;
+	private PageDimensions currentPageDimensions;
 	
-	private ArrayList<ClassPeriod> classes = new ArrayList<ClassPeriod>();
+	private ArrayList<ClassPeriod> classes;
 	private ClassPeriodDistanceComparator distanceComparator;
 	private SeatingHandler seatingHandler;
 	
-	private ExecutorService imageLoadService ;
+	private PDDocument doc;
+	private File file;
 	
-	private static final double ZOOM_DELTA = 1.05 ;
+	private ExecutorService imageLoadService;
+	
+	private static final double ZOOM_DELTA = 1.2;
 	
 	public void initialize() {
-		
+		classes = new ArrayList<ClassPeriod>();
 		HashMap<Integer, Integer> roomDistances = new HashMap<Integer, Integer>();
 		distanceComparator = new ClassPeriodDistanceComparator(roomDistances);
 		int[][][] rowSizes =
@@ -91,8 +105,7 @@ public class Controller {
 		seatingHandler = new SeatingHandler(rowSizes);
 		
 		createAndConfigureImageLoadService();
-		createAndConfigureFileChooser();
-		
+
 		currentFile = new SimpleObjectProperty<>();
 		updateWindowTitleWhenFileChanges();
 		
@@ -100,10 +113,6 @@ public class Controller {
 		scroller.contentProperty().bind(currentImage);
 		
 		zoom = new SimpleDoubleProperty(1);
-		// To implement zooming, we just get a new image from the PDFFile each time.
-		// This seems to perform well in some basic tests but may need to be improved
-		// E.g. load a larger image and scale in the ImageView, loading a new image only
-		// when required.
 		zoom.addListener(new ChangeListener<Number>() {
 			@Override
 			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -115,12 +124,69 @@ public class Controller {
 		
 		bindPaginationToCurrentFile();
 		createPaginationPageFactory();
+		bindZoomKeys();
+		
+		try {
+			prepareTempFile();
+		} catch (IOException e) {
+			showErrorMessage("Could not load template", e);
+			e.printStackTrace();
+		}
+		
+		loadFile(file);
+	}
+	
+	public void prepareTempFile() throws IOException {
+		doc = PDDocument.load(new File("src/template.pdf"));
+		for (File toDel : new File("temp").listFiles())
+			System.out.println(toDel.delete());
+		file = File.createTempFile("seating-chart", ".pdf", new File("temp"));
+		doc.save(file);
+		file.deleteOnExit();
+	}
+	
+	public void addText(PDDocument doc, float x, float y, String text) throws IOException {
+		PDFont font = PDType1Font.TIMES_ROMAN;
+		float fontSize = 12;
+		PDPage page = doc.getPages().get(0);
+		PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.APPEND, true, true);
+		contentStream.beginText();
+		contentStream.setFont(font, fontSize);
+		contentStream.setNonStrokingColor(0, 0, 0);
+		contentStream.setTextMatrix(Matrix.getTranslateInstance(x, y));
+		contentStream.showText(text);
+		contentStream.endText();
+		contentStream.close();
 	}
 	
 	public void generateSeatingChart() {
 		seatingHandler.clear();
 		seatingHandler.fill(classes, distanceComparator);
-		LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
+		//LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
+		float x = 100;
+		float y = 100;
+		/*for (LinkedHashMap<String, Integer>[][] seatingRow : seatingChart) {
+			for (LinkedHashMap<String, Integer>[] room : seatingRow) {
+				for (LinkedHashMap<String, Integer> row : room) {
+					String text = "";
+					for (Map.Entry<String, Integer> entry : row.entrySet())
+						text += entry.getKey() + " " + entry.getValue();
+					addText(doc, x, y, text);
+					y += 14;
+				}
+			}
+		}*/
+		try {
+			doc.close();
+			prepareTempFile();
+			addText(doc, x, y, "hello");
+			doc.save(file);
+		}
+		catch (IOException e) {
+			showErrorMessage("Could not load/save temporary file", e);
+			e.printStackTrace();
+		}
+		loadFile(file);		
 	}
 
 	private void createAndConfigureImageLoadService() {
@@ -134,18 +200,12 @@ public class Controller {
 		});
 	}
 
-	private void createAndConfigureFileChooser() {
-		fileChooser = new FileChooser();
-		fileChooser.setInitialDirectory(Paths.get(System.getProperty("user.home")).toFile());
-		fileChooser.getExtensionFilters().add(new ExtensionFilter("PDF Files", "*.pdf", "*.PDF"));
-	}
-
 	private void updateWindowTitleWhenFileChanges() {
 		currentFile.addListener(new ChangeListener<PDFFile>() {
 			@Override
 			public void changed(ObservableValue<? extends PDFFile> observable, PDFFile oldFile, PDFFile newFile) {
 				try {
-					String title = newFile == null ? "PDF Viewer" : newFile.getStringMetadata("Title") ;
+					String title = newFile == null ? "PDF Viewer" : newFile.getStringMetadata("Title");
 					Window window = pagination.getScene().getWindow();
 					if (window instanceof Stage) {
 						((Stage)window).setTitle(title);
@@ -168,39 +228,47 @@ public class Controller {
 			}
 		});
 		pagination.pageCountProperty().bind(new IntegerBinding() {
-			{
-				super.bind(currentFile);
-			}
+			{ super.bind(currentFile); }
 			@Override
 			protected int computeValue() {
-				return currentFile.get()==null ? 0 : currentFile.get().getNumPages() ;
+				return currentFile.get() == null ? 0 : currentFile.get().getNumPages();
 			}
 		});
 		pagination.disableProperty().bind(Bindings.isNull(currentFile));
+	}
+	
+	private void bindZoomKeys() {
+		borderPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+			public void handle(KeyEvent event) {
+				if (event.getCode() == KeyCode.EQUALS) {
+					zoomIn();
+				}
+				if (event.getCode() == KeyCode.MINUS) {
+					zoomOut();
+				}
+			}
+		});
 	}
 	
 	private void createPaginationPageFactory() {
 		pagination.setPageFactory(new Callback<Integer, Node>() {
 			@Override
 			public Node call(Integer pageNumber) {
-				if (currentFile.get() == null) {
-					return null ;
-				} else {
+				if (currentFile.get() == null)
+					return null;
+				else {
 					if (pageNumber >= currentFile.get().getNumPages() || pageNumber < 0) {
-						return null ;
+						return null;
 					} else {
 						updateImage(pageNumber);
-						return scroller ;
+						return scroller;
 					}
 				}
 			}
 		});
 	}
 	
-	// ************** Event Handlers ****************
-	
-	@FXML private void loadFile() {
-		final File file = fileChooser.showOpenDialog(pagination.getScene().getWindow());
+	@FXML private void loadFile(File file) {
 		if (file != null) {
 			final Task<PDFFile> loadFileTask = new Task<PDFFile>() {
 				@Override
@@ -220,6 +288,7 @@ public class Controller {
 					pagination.getScene().getRoot().setDisable(false);
 					final PDFFile pdfFile = loadFileTask.getValue();
 					currentFile.set(pdfFile);
+					updateImage(pagination.getCurrentPageIndex());
 				}
 			});
 			loadFileTask.setOnFailed(new EventHandler<WorkerStateEvent>() {
@@ -229,7 +298,7 @@ public class Controller {
 					showErrorMessage("Could not load file "+file.getName(), loadFileTask.getException());
 				}
 			});
-			pagination.getScene().getRoot().setDisable(true);
+			fitOnLoad = true;
 			imageLoadService.submit(loadFileTask);
 		}
 	}
@@ -243,17 +312,10 @@ public class Controller {
 	}
 	
 	@FXML private void zoomFit() {
-		// TODO: the -20 is a kludge to account for the width of the scrollbars, if showing.
-		double horizZoom = (scroller.getWidth()-20) / currentPageDimensions.width ;
-		double verticalZoom = (scroller.getHeight()-20) / currentPageDimensions.height ;
-		zoom.set(Math.min(horizZoom, verticalZoom));
+		double horizontalZoom = (scroller.getWidth() - 20) / currentPageDimensions.width;
+		double verticalZoom = (scroller.getHeight() - 20) / currentPageDimensions.height;
+		zoom.set(Math.min(horizontalZoom, verticalZoom));
 	}
-	
-	@FXML private void zoomWidth() {
-		zoom.set((scroller.getWidth()-20) / currentPageDimensions.width) ;
-	}
-
-	// *************** Background image loading ****************
 	
 	private void updateImage(final int pageNumber) {
 		final Task<ImageView> updateImageTask = new Task<ImageView>() {
@@ -263,23 +325,23 @@ public class Controller {
 				Rectangle2D bbox = page.getBBox();
 				final double actualPageWidth = bbox.getWidth();
 				final double actualPageHeight = bbox.getHeight();
-				// record page dimensions for zoomToFit and zoomToWidth:
+
 				currentPageDimensions = new PageDimensions(actualPageWidth, actualPageHeight);
-				// width and height of image:
+
 				final int width = (int) (actualPageWidth * zoom.get());
 				final int height = (int) (actualPageHeight * zoom.get());
-				// retrieve image for page:
-				// width, height, clip, imageObserver, paintBackground, waitUntilLoaded:
+
+
 				java.awt.Image awtImage = page.getImage(width, height, bbox, null, true, true); 
-				// draw image to buffered image:
+
 				BufferedImage buffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 				buffImage.createGraphics().drawImage(awtImage, 0, 0, null);
-				// convert to JavaFX image:
+
 				Image image = SwingFXUtils.toFXImage(buffImage, null);
-				// wrap in image view and return:
+
 				ImageView imageView = new ImageView(image);
 				imageView.setPreserveRatio(true);
-				return imageView ;
+				return imageView;
 			}
 		};
 
@@ -288,6 +350,10 @@ public class Controller {
 			public void handle(WorkerStateEvent event) {
 				pagination.getScene().getRoot().setDisable(false);
 				currentImage.set(updateImageTask.getValue());
+				if (fitOnLoad) {
+					zoomFit();
+					fitOnLoad = false;
+				}
 			}
 		});
 		
@@ -305,12 +371,9 @@ public class Controller {
 	}
 	
 	private void showErrorMessage(String message, Throwable exception) {
-		
-		// TODO: move to fxml (or better, use ControlsFX)
-		
-		final Stage dialog = new Stage();
-		dialog.initOwner(pagination.getScene().getWindow());
-		dialog.initStyle(StageStyle.UNDECORATED);
+		final Stage dialogue = new Stage();
+		dialogue.initOwner(pagination.getScene().getWindow());
+		dialogue.initStyle(StageStyle.UNDECORATED);
 		final VBox root = new VBox(10);
 		root.setPadding(new Insets(10));
 		StringWriter errorMessage = new StringWriter();
@@ -325,7 +388,7 @@ public class Controller {
 		closeButton.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				dialog.hide();
+				dialogue.hide();
 			}
 		});
 		HBox closeButtonHolder = new HBox();
@@ -341,19 +404,18 @@ public class Controller {
 			@Override
 			public void changed(ObservableValue<? extends Boolean> observable,
 					Boolean oldValue, Boolean newValue) {
-				if (newValue) {
+				if (newValue)
 					detailsLabelHolder.getChildren().add(detailsLabel);
-				} else {
+				else
 					detailsLabelHolder.getChildren().remove(detailsLabel);
-				}
-				dialog.sizeToScene();
+				dialogue.sizeToScene();
 			}
 			
 		});
 		final Scene scene = new Scene(root);
 
-		dialog.setScene(scene);
-		dialog.show();
+		dialogue.setScene(scene);
+		dialogue.show();
 	}
 	
 	
@@ -365,12 +427,14 @@ public class Controller {
 	 */
 	
 	private class PageDimensions {
-		private double width ;
-		private double height ;
+		private double width;
+		private double height;
+		
 		PageDimensions(double width, double height) {
-			this.width = width ;
-			this.height = height ;
+			this.width = width;
+			this.height = height;
 		}
+		
 		@Override
 		public String toString() {
 			return String.format("[%.1f, %.1f]", width, height);

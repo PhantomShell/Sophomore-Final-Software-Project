@@ -16,7 +16,7 @@ public class Room {
 	}
 	
 	public boolean isFull() {
-		return rows.get(rows.size() - 1).isFull();
+		return rows.get(rows.size() - 1).isFull() || rows.size() == 0;
 	}
 	
 	@SuppressWarnings("unchecked")
