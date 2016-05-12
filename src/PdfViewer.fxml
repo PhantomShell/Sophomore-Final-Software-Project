@@ -68,7 +68,7 @@
 										<RowConstraints percentHeight = "50.0" />
 									</rowConstraints>
 									<children>
-										<Button maxWidth = "Infinity" text = "Generate Seating Chart" style = "-fx-font: 32 arial" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
+										<Button maxWidth = "Infinity" text = "Generate Seating Chart" onAction = "#generateSeatingChart" style = "-fx-font: 32 arial" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
 									</children>
 								</GridPane>
 							</children>

@@ -1,5 +1,6 @@
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.print.PrinterException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.UnaryOperator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,6 +24,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.printing.PDFPageable;
 import org.apache.pdfbox.util.Matrix;
 
 import com.sun.pdfview.PDFFile;
@@ -43,6 +46,7 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.print.PrinterJob;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -61,6 +65,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
@@ -70,6 +76,7 @@ import javafx.util.converter.IntegerStringConverter;
 
 public class Controller {
 
+	@FXML private Window stage;
 	@FXML private Pagination pagination;
 	@FXML private Label currentZoomLabel;
 	@FXML private BorderPane previewPane;
@@ -148,6 +155,9 @@ public class Controller {
 		image = new Image(imageFile.toURI().toString());
 		emailButton.setGraphic(new ImageView(image));
 		
+		bindSaveButton();
+		bindPrintButton();
+		
 		try {
 			prepareTempFile();
 		} catch (IOException e) {
@@ -162,10 +172,10 @@ public class Controller {
 		    if (change.getText().matches("[1-8]?") && change.getSelection().getEnd() <= 1) {
 		    	return change;
 		    }
-		    if (change.getText().equals("-")) {
+		    else if (change.getText().equals("-")) {
 		    	zoomOut();
 		    }
-		    if (change.getText().equals("=")) {
+		    else if (change.getText().equals("=")) {
 		    	zoomIn();
 		    }
 		    return null;
@@ -197,6 +207,41 @@ public class Controller {
 		file = File.createTempFile("seating-chart", ".pdf", new File("temp"));
 		doc.save(file);
 		file.deleteOnExit();
+	}
+	
+	private void bindSaveButton() {
+		saveButton.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				try {
+					FileChooser fileChooser = new FileChooser();
+					fileChooser.setTitle("Save Seating Chart");
+					ExtensionFilter extensionFilter = new ExtensionFilter("PDF File", Arrays.asList(new String[] {"*.pdf"}));
+					fileChooser.getExtensionFilters().add(extensionFilter);
+					File file = fileChooser.showSaveDialog(stage);
+					doc.save(file);
+				}
+				catch (IOException e) {
+					showErrorMessage("Could not save file", e);
+					e.printStackTrace();
+				}
+				catch (NullPointerException e) {
+					
+				}
+			}
+		});
+	}
+	
+	private void bindPrintButton() {
+		printButton.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				Node image = imageFromPDF(0);
+				PrinterJob job = PrinterJob.createPrinterJob();
+				if (job != null && job.showPrintDialog(stage)) {
+					if (job.printPage(image))
+						job.endJob();
+				}
+			}
+		});
 	}
 	
 	private void addText(PDDocument doc, float x, float y, String text) throws IOException {
@@ -357,6 +402,30 @@ public class Controller {
 		}
 	}
 	
+	private ImageView imageFromPDF(int pageNumber) {
+		PDFPage page = currentFile.get().getPage(pageNumber + 1);
+		Rectangle2D bbox = page.getBBox();
+		final double actualPageWidth = bbox.getWidth();
+		final double actualPageHeight = bbox.getHeight();
+
+		currentPageDimensions = new PageDimensions(actualPageWidth, actualPageHeight);
+
+		final int width = (int) (actualPageWidth * zoom.get());
+		final int height = (int) (actualPageHeight * zoom.get());
+
+
+		java.awt.Image awtImage = page.getImage(width, height, bbox, null, true, true); 
+
+		BufferedImage buffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		buffImage.createGraphics().drawImage(awtImage, 0, 0, null);
+
+		Image image = SwingFXUtils.toFXImage(buffImage, null);
+
+		ImageView imageView = new ImageView(image);
+		imageView.setPreserveRatio(true);
+		return imageView;
+	}
+	
 	@FXML private void zoomIn() {
 		zoom.set(zoom.get()*ZOOM_DELTA);
 	}
@@ -375,27 +444,7 @@ public class Controller {
 		final Task<ImageView> updateImageTask = new Task<ImageView>() {
 			@Override
 			protected ImageView call() throws Exception {
-				PDFPage page = currentFile.get().getPage(pageNumber+1);
-				Rectangle2D bbox = page.getBBox();
-				final double actualPageWidth = bbox.getWidth();
-				final double actualPageHeight = bbox.getHeight();
-
-				currentPageDimensions = new PageDimensions(actualPageWidth, actualPageHeight);
-
-				final int width = (int) (actualPageWidth * zoom.get());
-				final int height = (int) (actualPageHeight * zoom.get());
-
-
-				java.awt.Image awtImage = page.getImage(width, height, bbox, null, true, true); 
-
-				BufferedImage buffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-				buffImage.createGraphics().drawImage(awtImage, 0, 0, null);
-
-				Image image = SwingFXUtils.toFXImage(buffImage, null);
-
-				ImageView imageView = new ImageView(image);
-				imageView.setPreserveRatio(true);
-				return imageView;
+				return imageFromPDF(pageNumber);
 			}
 		};
 
