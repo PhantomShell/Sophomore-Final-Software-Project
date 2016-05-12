@@ -10,6 +10,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.UnaryOperator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -48,6 +49,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -60,13 +65,20 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
+import javafx.util.converter.IntegerStringConverter;
 
 public class Controller {
 
 	@FXML private Pagination pagination;
 	@FXML private Label currentZoomLabel;
-	@FXML private BorderPane borderPane;
+	@FXML private BorderPane previewPane;
 	@FXML private ScrollPane scroller;
+	@FXML private Spinner<Integer> spinner;
+	@FXML private SplitPane basicPane;
+	@FXML private Button saveButton;
+	@FXML private Button printButton;
+	@FXML private Button emailButton;
 	
 	private boolean fitOnLoad;
 
@@ -108,7 +120,6 @@ public class Controller {
 
 		currentFile = new SimpleObjectProperty<>();
 		updateWindowTitleWhenFileChanges();
-		
 		currentImage = new SimpleObjectProperty<>();
 		scroller.contentProperty().bind(currentImage);
 		
@@ -125,6 +136,17 @@ public class Controller {
 		bindPaginationToCurrentFile();
 		createPaginationPageFactory();
 		bindZoomKeys();
+		restrictSpinner();
+		
+		File imageFile = new File("src/save.png");
+		Image image = new Image(imageFile.toURI().toString());
+		saveButton.setGraphic(new ImageView(image));
+		imageFile = new File("src/print.png");
+		image = new Image(imageFile.toURI().toString());
+		printButton.setGraphic(new ImageView(image));
+		imageFile = new File("src/email.png");
+		image = new Image(imageFile.toURI().toString());
+		emailButton.setGraphic(new ImageView(image));
 		
 		try {
 			prepareTempFile();
@@ -132,20 +154,52 @@ public class Controller {
 			showErrorMessage("Could not load template", e);
 			e.printStackTrace();
 		}
-		
 		loadFile(file);
 	}
 	
-	public void prepareTempFile() throws IOException {
+	private void restrictSpinner() {
+		UnaryOperator<TextFormatter.Change> filter = change -> {
+		    if (change.getText().matches("[1-8]?") && change.getSelection().getEnd() <= 1) {
+		    	return change;
+		    }
+		    if (change.getText().equals("-")) {
+		    	zoomOut();
+		    }
+		    if (change.getText().equals("=")) {
+		    	zoomIn();
+		    }
+		    return null;
+		};
+		TextFormatter<Integer> textFormatter = new TextFormatter<Integer>(filter);
+		spinner.getEditor().setTextFormatter(textFormatter);
+		IntegerSpinnerValueFactory valueFactory = new IntegerSpinnerValueFactory(0, 8);
+        valueFactory.setConverter(new StringConverter<Integer>() {
+            @Override
+            public String toString(Integer object) {
+                return object.toString();
+            }
+
+            @Override
+            public Integer fromString(String string) {
+                if (string.matches("-?\\d+")) {
+                    return new Integer(string);
+                }
+                return 0;
+            }
+        });
+        spinner.setValueFactory(valueFactory);
+	}
+	
+	private void prepareTempFile() throws IOException {
 		doc = PDDocument.load(new File("src/template.pdf"));
 		for (File toDel : new File("temp").listFiles())
-			System.out.println(toDel.delete());
+			toDel.delete();
 		file = File.createTempFile("seating-chart", ".pdf", new File("temp"));
 		doc.save(file);
 		file.deleteOnExit();
 	}
 	
-	public void addText(PDDocument doc, float x, float y, String text) throws IOException {
+	private void addText(PDDocument doc, float x, float y, String text) throws IOException {
 		PDFont font = PDType1Font.TIMES_ROMAN;
 		float fontSize = 12;
 		PDPage page = doc.getPages().get(0);
@@ -238,7 +292,7 @@ public class Controller {
 	}
 	
 	private void bindZoomKeys() {
-		borderPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+		basicPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
 			public void handle(KeyEvent event) {
 				if (event.getCode() == KeyCode.EQUALS) {
 					zoomIn();
