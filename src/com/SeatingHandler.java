@@ -1,3 +1,5 @@
+package com;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,13 +46,15 @@ public class SeatingHandler {
 		}
 	}
 	
-	public void fill(ArrayList<ClassPeriod> classes, ClassPeriodDistanceComparator distanceComparator) {
+	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, ClassPeriodDistanceComparator distanceComparator) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
 		Collections.sort(copy, distanceComparator);
 		for (ClassPeriod period : copy) {
-			String teacher = period.getTeacher();
-			int students = period.getClassSize();
-			fill(teacher, students);
+			String teacher = period.toString();
+			int seats = 1;
+			for (int grade: grades)
+				seats += period.getClassSize(grade);
+			fill(teacher, seats);
 		}
 	}
 	

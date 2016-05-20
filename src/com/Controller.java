@@ -1,6 +1,7 @@
+package com;
+
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.print.PrinterException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,12 +12,12 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -24,7 +25,6 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.printing.PDFPageable;
 import org.apache.pdfbox.util.Matrix;
 
 import com.sun.pdfview.PDFFile;
@@ -46,16 +46,18 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.print.PrinterJob;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
@@ -72,11 +74,10 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
-import javafx.util.converter.IntegerStringConverter;
 
 public class Controller {
 
-	@FXML private Window stage;
+	@FXML private Stage stage;
 	@FXML private Pagination pagination;
 	@FXML private Label currentZoomLabel;
 	@FXML private BorderPane previewPane;
@@ -84,8 +85,13 @@ public class Controller {
 	@FXML private Spinner<Integer> spinner;
 	@FXML private SplitPane basicPane;
 	@FXML private Button saveButton;
-	@FXML private Button printButton;
 	@FXML private Button emailButton;
+	@FXML private ListView<String> listView;
+	@FXML private CheckBox checkbox9;
+	@FXML private CheckBox checkbox10;
+	@FXML private CheckBox checkbox11;
+	@FXML private CheckBox checkbox12;
+	@FXML private TextField textField;
 	
 	private boolean fitOnLoad;
 
@@ -94,9 +100,14 @@ public class Controller {
 	private DoubleProperty zoom;
 	private PageDimensions currentPageDimensions;
 	
-	private ArrayList<ClassPeriod> classes;
 	private ClassPeriodDistanceComparator distanceComparator;
 	private SeatingHandler seatingHandler;
+	private ClassPeriodFiller classPeriodFiller;
+	private ArrayList<ArrayList<ClassPeriod>> periods;
+	private ArrayList<Integer> grades;
+	private int period;
+	private ArrayList<ClassPeriod> classes;
+	private AutoCompleteSearchHandler searchBox;
 	
 	private PDDocument doc;
 	private File file;
@@ -106,9 +117,13 @@ public class Controller {
 	private static final double ZOOM_DELTA = 1.2;
 	
 	public void initialize() {
-		classes = new ArrayList<ClassPeriod>();
-		HashMap<Integer, Integer> roomDistances = new HashMap<Integer, Integer>();
+		classPeriodFiller = new ClassPeriodFiller();
+		periods = classPeriodFiller.fillPeriods();
+		HashMap<String, Integer> roomDistances = new HashMap<String, Integer>();
+		roomDistances.put("199", 2);
+		roomDistances.put("195", 1);
 		distanceComparator = new ClassPeriodDistanceComparator(roomDistances);
+		grades = new ArrayList<Integer>();
 		int[][][] rowSizes =
 			{
 				{
@@ -144,19 +159,17 @@ public class Controller {
 		createPaginationPageFactory();
 		bindZoomKeys();
 		restrictSpinner();
+		bindCheckBoxes();
 		
-		File imageFile = new File("src/save.png");
+		File imageFile = new File("save.png");
 		Image image = new Image(imageFile.toURI().toString());
 		saveButton.setGraphic(new ImageView(image));
-		imageFile = new File("src/print.png");
-		image = new Image(imageFile.toURI().toString());
-		printButton.setGraphic(new ImageView(image));
-		imageFile = new File("src/email.png");
+		imageFile = new File("email.png");
 		image = new Image(imageFile.toURI().toString());
 		emailButton.setGraphic(new ImageView(image));
 		
 		bindSaveButton();
-		bindPrintButton();
+		createSearchBar();
 		
 		try {
 			prepareTempFile();
@@ -167,22 +180,62 @@ public class Controller {
 		loadFile(file);
 	}
 	
+	private void bindCheckBoxes() {
+		Function<Integer, ChangeListener<Boolean>> createListener = (grade) -> {
+			return new ChangeListener<Boolean>() {
+				@Override
+			    public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+			        if (newValue && !oldValue)
+			        	grades.add(grade);
+			        else if (!newValue && oldValue)
+			        	grades.remove(grade);
+			        updateClasses();
+				}
+			};
+		};
+		checkbox9.selectedProperty().addListener(createListener.apply(9));
+		checkbox10.selectedProperty().addListener(createListener.apply(10));
+		checkbox11.selectedProperty().addListener(createListener.apply(11));
+		checkbox12.selectedProperty().addListener(createListener.apply(12));
+	}
+	
+	private void updateClasses() {
+		classes = new ArrayList<ClassPeriod>();
+		ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
+		for (ClassPeriod classPeriod : classPeriods)
+			for (int grade : grades)
+				if (classPeriod.getClassSize(grade) > 0) {
+					classes.add(classPeriod);
+					break;
+				}
+		searchBox.setChoices(classes);
+	}
+	
 	private void restrictSpinner() {
-		UnaryOperator<TextFormatter.Change> filter = change -> {
-		    if (change.getText().matches("[1-8]?") && change.getSelection().getEnd() <= 1) {
-		    	return change;
+		period = 1;
+		IntegerSpinnerValueFactory valueFactory = new IntegerSpinnerValueFactory(1, 8);
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+			String newText = change.getControlNewText();
+			String changeText = change.getText();
+		    if (changeText.matches("[1-8]?")) {
+		    	if (newText.length() < 2) {
+			    	if (!newText.equals("")) {
+			    		period = Integer.parseInt(newText);
+			    		updateClasses();
+			    	}
+			    	return change;
+		    	}
+		    	else
+		    		valueFactory.setValue(Integer.parseInt(newText.substring(0, 1)));		    		
 		    }
-		    else if (change.getText().equals("-")) {
+		    else if (changeText.equals("-"))
 		    	zoomOut();
-		    }
-		    else if (change.getText().equals("=")) {
+		    else if (changeText.equals("="))
 		    	zoomIn();
-		    }
 		    return null;
 		};
 		TextFormatter<Integer> textFormatter = new TextFormatter<Integer>(filter);
 		spinner.getEditor().setTextFormatter(textFormatter);
-		IntegerSpinnerValueFactory valueFactory = new IntegerSpinnerValueFactory(0, 8);
         valueFactory.setConverter(new StringConverter<Integer>() {
             @Override
             public String toString(Integer object) {
@@ -191,19 +244,28 @@ public class Controller {
 
             @Override
             public Integer fromString(String string) {
-                if (string.matches("-?\\d+")) {
+                if (string.matches("-?\\d+"))
                     return new Integer(string);
-                }
                 return 0;
             }
         });
         spinner.setValueFactory(valueFactory);
+        spinner.getEditor().addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+        	@Override
+			public void handle(KeyEvent event) {
+				if (event.getCode() == KeyCode.UP)
+					valueFactory.increment(1);
+				if (event.getCode() == KeyCode.DOWN)
+					valueFactory.decrement(1);
+			}
+		});
 	}
 	
 	private void prepareTempFile() throws IOException {
-		doc = PDDocument.load(new File("src/template.pdf"));
+		doc = PDDocument.load(new File("template.pdf"));
 		for (File toDel : new File("temp").listFiles())
-			toDel.delete();
+			if (toDel.getName().endsWith(".pdf"))
+				toDel.delete();
 		file = File.createTempFile("seating-chart", ".pdf", new File("temp"));
 		doc.save(file);
 		file.deleteOnExit();
@@ -224,24 +286,13 @@ public class Controller {
 					showErrorMessage("Could not save file", e);
 					e.printStackTrace();
 				}
-				catch (NullPointerException e) {
-					
-				}
+				catch (NullPointerException e) {}
 			}
 		});
 	}
 	
-	private void bindPrintButton() {
-		printButton.setOnAction(new EventHandler<ActionEvent>() {
-			public void handle(ActionEvent event) {
-				Node image = imageFromPDF(0);
-				PrinterJob job = PrinterJob.createPrinterJob();
-				if (job != null && job.showPrintDialog(stage)) {
-					if (job.printPage(image))
-						job.endJob();
-				}
-			}
-		});
+	private void createSearchBar() {
+		searchBox = new AutoCompleteSearchHandler(textField, listView);
 	}
 	
 	private void addText(PDDocument doc, float x, float y, String text) throws IOException {
@@ -260,10 +311,12 @@ public class Controller {
 	
 	public void generateSeatingChart() {
 		seatingHandler.clear();
-		seatingHandler.fill(classes, distanceComparator);
-		//LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
-		float x = 100;
-		float y = 100;
+		System.out.println(period);
+		System.out.println(grades);
+		ArrayList<ClassPeriod> classes = periods.get(period - 1);
+		seatingHandler.fill(classes, grades, distanceComparator);
+		LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
+		System.out.println(Arrays.deepToString(seatingChart));
 		/*for (LinkedHashMap<String, Integer>[][] seatingRow : seatingChart) {
 			for (LinkedHashMap<String, Integer>[] room : seatingRow) {
 				for (LinkedHashMap<String, Integer> row : room) {
@@ -278,7 +331,7 @@ public class Controller {
 		try {
 			doc.close();
 			prepareTempFile();
-			addText(doc, x, y, "hello");
+			addText(doc, 100, 100, "hi");
 			doc.save(file);
 		}
 		catch (IOException e) {
@@ -339,12 +392,10 @@ public class Controller {
 	private void bindZoomKeys() {
 		basicPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
 			public void handle(KeyEvent event) {
-				if (event.getCode() == KeyCode.EQUALS) {
+				if (event.getCode() == KeyCode.EQUALS)
 					zoomIn();
-				}
-				if (event.getCode() == KeyCode.MINUS) {
+				if (event.getCode() == KeyCode.MINUS)
 					zoomOut();
-				}
 			}
 		});
 	}
@@ -402,30 +453,6 @@ public class Controller {
 		}
 	}
 	
-	private ImageView imageFromPDF(int pageNumber) {
-		PDFPage page = currentFile.get().getPage(pageNumber + 1);
-		Rectangle2D bbox = page.getBBox();
-		final double actualPageWidth = bbox.getWidth();
-		final double actualPageHeight = bbox.getHeight();
-
-		currentPageDimensions = new PageDimensions(actualPageWidth, actualPageHeight);
-
-		final int width = (int) (actualPageWidth * zoom.get());
-		final int height = (int) (actualPageHeight * zoom.get());
-
-
-		java.awt.Image awtImage = page.getImage(width, height, bbox, null, true, true); 
-
-		BufferedImage buffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		buffImage.createGraphics().drawImage(awtImage, 0, 0, null);
-
-		Image image = SwingFXUtils.toFXImage(buffImage, null);
-
-		ImageView imageView = new ImageView(image);
-		imageView.setPreserveRatio(true);
-		return imageView;
-	}
-	
 	@FXML private void zoomIn() {
 		zoom.set(zoom.get()*ZOOM_DELTA);
 	}
@@ -444,7 +471,20 @@ public class Controller {
 		final Task<ImageView> updateImageTask = new Task<ImageView>() {
 			@Override
 			protected ImageView call() throws Exception {
-				return imageFromPDF(pageNumber);
+				PDFPage page = currentFile.get().getPage(pageNumber + 1);
+				Rectangle2D bbox = page.getBBox();
+				final double actualPageWidth = bbox.getWidth();
+				final double actualPageHeight = bbox.getHeight();
+				currentPageDimensions = new PageDimensions(actualPageWidth, actualPageHeight);
+				final int width = (int) (actualPageWidth * zoom.get());
+				final int height = (int) (actualPageHeight * zoom.get());
+				java.awt.Image awtImage = page.getImage(width, height, bbox, null, true, true); 
+				BufferedImage buffImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+				buffImage.createGraphics().drawImage(awtImage, 0, 0, null);
+				Image image = SwingFXUtils.toFXImage(buffImage, null);
+				ImageView imageView = new ImageView(image);
+				imageView.setPreserveRatio(true);
+				return imageView ;
 			}
 		};
 
