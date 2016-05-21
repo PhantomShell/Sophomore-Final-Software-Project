@@ -49,7 +49,7 @@ public class SeatingHandler {
 	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
 		for (ClassPeriod period : copy) {
-			String teacher = period.toString();
+			String teacher = period.getLastName();
 			int seats = 1;
 			for (int grade: grades)
 				seats += period.getClassSize(grade);

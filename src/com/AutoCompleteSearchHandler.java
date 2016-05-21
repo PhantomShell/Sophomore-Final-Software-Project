@@ -126,21 +126,20 @@ public class AutoCompleteSearchHandler {
             	VBox vBox = new VBox();
             	hBox.setAlignment(Pos.CENTER);
             	vBox.setAlignment(Pos.CENTER);
-            	final Button upButton = new Button("▲");
+            	final Button upButton = new Button("▴");
             	upButton.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
                     	try {
-	                    	ObservableList<String> items = parent.getItems();
-	                    	String temp = items.get(index);
-	                    	items.set(index, items.get(index - 1));
-	                    	items.set(index - 1, temp);
-	                    	parent.setItems(items);
+	                    	ClassPeriod temp = restrictions.get(index);
+	                    	restrictions.set(index, restrictions.get(index - 1));
+	                    	restrictions.set(index - 1, temp);
+	                    	updateRestrictionList();
                     	}
                     	catch (IndexOutOfBoundsException e) {}
                     }
                 });
-            	final Button downButton = new Button("▼");
+            	final Button downButton = new Button("▾");
             	downButton.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {

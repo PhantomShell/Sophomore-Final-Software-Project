@@ -55,7 +55,7 @@ public class ClassPeriodFiller {
 			ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
 			boolean found = false;
 			for (ClassPeriod classPeriod : classPeriods)
-				if (classPeriod.toString().equals(firstName + " " + lastName)) {
+				if (classPeriod.toString().equals(lastName + ", " + firstName)) {
 					classPeriod.incrementClassSize(grade);
 					found = true;
 					break;

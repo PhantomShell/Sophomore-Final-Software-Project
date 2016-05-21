@@ -19,13 +19,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.util.Matrix;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.apache.pdfbox.pdmodel.interactive.form.PDField;
 
 import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFPage;
@@ -121,8 +120,7 @@ public class Controller {
 		classPeriodFiller = new ClassPeriodFiller();
 		periods = classPeriodFiller.fillPeriods();
 		HashMap<String, Integer> roomDistances = new HashMap<String, Integer>();
-		roomDistances.put("199", 2);
-		roomDistances.put("195", 1);
+		setRoomDistances();
 		distanceComparator = new ClassPeriodDistanceComparator(roomDistances);
 		grades = new ArrayList<Integer>();
 		int[][][] rowSizes =
@@ -179,6 +177,10 @@ public class Controller {
 			e.printStackTrace();
 		}
 		loadFile(file);
+	}
+	
+	private void setRoomDistances() {
+		
 	}
 	
 	private void bindCheckBoxes() {
@@ -291,23 +293,34 @@ public class Controller {
 			}
 		});
 	}
-	
-	private void addText(PDDocument doc, int row, int col, String text) throws IOException {
-//		PDFont font = PDType1Font.TIMES_ROMAN;
-//		float fontSize = 12;
-//		PDPage page = doc.getPages().get(0);
-//		PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.APPEND, true, true);
-//		contentStream.beginText();
-//		contentStream.setFont(font, fontSize);
-//		contentStream.setNonStrokingColor(0, 0, 0);
-//		contentStream.setTextMatrix(Matrix.getTranslateInstance(x, y));
-//		contentStream.showText(text);
-//		contentStream.endText();
-//		contentStream.close();
-	}
-	
-	private void addAll(PDDocument doc, LinkedHashMap<String, Integer>[][][] seatingChart) {
 		
+	private void addAll(PDDocument doc, LinkedHashMap<String, Integer>[][][] seatingChart) throws IOException {
+		PDDocumentCatalog docCatalog = doc.getDocumentCatalog();
+		PDAcroForm acroForm = docCatalog.getAcroForm();
+		int index = 0;
+		for (int i = 0; i < seatingChart.length; i++) {
+			for (int j = 0; j < seatingChart[i].length; j++) {
+				for (int k = 0; k < seatingChart[i][j].length; k++)
+					if (seatingChart[i][j][k].size() > 0) {
+						PDField field = acroForm.getField(index + "_" + k);
+						String value = " - ";
+						boolean first = true;
+						for (String teacher : seatingChart[i][j][k].keySet()) {
+							if (!first) 
+								value += ", ";
+							else
+								first = false;
+							value += teacher + " " + seatingChart[i][j][k].get(teacher);
+						}
+						COSDictionary dict = field.getCOSObject();
+				        dict.setString(COSName.DA, "/Helv 12 Tf 0 g");
+				        field.getCOSObject().addAll(dict);
+				        field.setValue(value);
+					}
+				index++;
+			}
+		}
+		acroForm.flatten();
 	}
 	
 	public void generateSeatingChart() {
@@ -320,22 +333,10 @@ public class Controller {
 				copy.add(classPeriod);
 		seatingHandler.fill(copy, grades, distanceComparator);
 		LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
-		System.out.println(Arrays.deepToString(seatingChart));
-		/*for (LinkedHashMap<String, Integer>[][] seatingRow : seatingChart) {
-			for (LinkedHashMap<String, Integer>[] room : seatingRow) {
-				for (LinkedHashMap<String, Integer> row : room) {
-					String text = "";
-					for (Map.Entry<String, Integer> entry : row.entrySet())
-						text += entry.getKey() + " " + entry.getValue();
-					addText(doc, x, y, text);
-					y += 14;
-				}
-			}
-		}*/
 		try {
 			doc.close();
 			prepareTempFile();
-			addText(doc, 100, 100, "hi");
+			addAll(doc, seatingChart);
 			doc.save(file);
 		}
 		catch (IOException e) {

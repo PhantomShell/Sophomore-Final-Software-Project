@@ -48,6 +48,6 @@ public class ClassPeriod {
 	}
 	
 	public String toString() {
-		return firstName + " " + lastName;
+		return lastName + ", " + firstName;
 	}
 }
