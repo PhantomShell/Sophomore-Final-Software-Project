@@ -121,35 +121,35 @@
 		</Tab>
 		<Tab text = "Advanced Generation">
 			<content>
-				<SplitPane fx:id = "advancedPane" dividerPositions = "0.3">
+				<SplitPane fx:id = "advancedPane" dividerPositions = "0.4">
 					<items>
 						<GridPane>
+							<padding>
+								<Insets top = "5" bottom = "5" left = "5" right = "5" />
+							</padding>
 							<rowConstraints>
-								<RowConstraints percentHeight = "10.0" />
-								<RowConstraints percentHeight = "90.0" />
+								<RowConstraints percentHeight = "5" />
+								<RowConstraints percentHeight = "95" />
 							</rowConstraints>
 							<columnConstraints>
 								<ColumnConstraints percentWidth = "100" />
 							</columnConstraints>
 							<children>
-								<!--<GridPane GridPane.rowIndex = "0" GridPane.columnIndex = "0">
-									<columnConstraints>
-										<ColumnConstraints percentWidth = "100" />
-									</columnConstraints>
-									<children>
-										<AutoFillTextBox fx:id = "box" maxWidth = "Infinity" GridPane.rowIndex = "0" GridPane.columnIndex = "0">
-											<padding>
-												<Insets top = "35" left = "5" right = "5" bottom = "5" />
-											</padding>
-										</AutoFillTextBox>
-									</children>
-								</GridPane>-->
-								<TextField fx:id = "textField" />
-								<ListView fx:id = "listView" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
+								<TextField fx:id = "textField" GridPane.rowIndex = "0" GridPane.columnIndex = "0" maxHeight = "Infinity" />
+								<ListView fx:id = "listView1" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
 							</children>
 						</GridPane>
-						<Accordion fx:id = "restrictions">
-						</Accordion>
+						<BorderPane>
+							<padding>
+								<Insets top = "5" bottom = "5" left = "5" right = "5" />
+							</padding>
+							<top>
+								<Label text = "Classes to Fill First" style = "-fx-font-size: 46" />
+							</top>
+							<center>
+								<ListView fx:id = "listView2" />
+							</center>
+						</BorderPane>
 					</items>
 				</SplitPane>
 			</content>

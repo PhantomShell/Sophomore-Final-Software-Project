@@ -4,6 +4,5 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="libs/PDFRenderer-0.9.0.jar"/>
 	<classpathentry kind="lib" path="libs/pdfbox-app-2.0.1.jar"/>
-	<classpathentry kind="lib" path="libs/javafx-autocomplete-field-1.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

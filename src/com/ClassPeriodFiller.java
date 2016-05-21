@@ -2,9 +2,6 @@ package com;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -15,26 +12,15 @@ public class ClassPeriodFiller {
 	static Map<String, Integer> field;
 	static ArrayList<ArrayList<String>> studentData;
 	static File outFile;
-	static FileWriter outFileWriter;
-	static PrintWriter outPrintWriter;
 	
 	public ClassPeriodFiller() {
 		Scanner file = null;
 		try {
 			file = new Scanner(new File("SMCS10_noGrades.mer"));
-		} catch (FileNotFoundException e) {
+		}
+		catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		
-		outFile = new File("out.csv");
-		try {
-			outFile.createNewFile();
-			outFileWriter = new FileWriter(outFile, true);
-			outPrintWriter = new PrintWriter(outFileWriter);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
 		
 		//create Map of Fields (line 1)
 		field = new HashMap<String,Integer>();

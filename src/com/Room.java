@@ -44,5 +44,7 @@ public class Room {
 	public void clear() {
 		for (Row row : rows)
 			row.clear();
+		filledSeats = 0;
+		lastUnfilled = 0;
 	}
 }

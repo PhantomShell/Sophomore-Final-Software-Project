@@ -46,9 +46,8 @@ public class SeatingHandler {
 		}
 	}
 	
-	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, ClassPeriodDistanceComparator distanceComparator) {
+	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
-		Collections.sort(copy, distanceComparator);
 		for (ClassPeriod period : copy) {
 			String teacher = period.toString();
 			int seats = 1;
@@ -56,6 +55,12 @@ public class SeatingHandler {
 				seats += period.getClassSize(grade);
 			fill(teacher, seats);
 		}
+	}
+	
+	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, ClassPeriodDistanceComparator comparator) {
+		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
+		Collections.sort(copy, comparator);
+		fill(copy, grades);
 	}
 	
 	public void clear() {

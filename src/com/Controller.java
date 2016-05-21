@@ -86,7 +86,8 @@ public class Controller {
 	@FXML private SplitPane basicPane;
 	@FXML private Button saveButton;
 	@FXML private Button emailButton;
-	@FXML private ListView<String> listView;
+	@FXML private ListView<String> listView1;
+	@FXML private ListView<String> listView2;
 	@FXML private CheckBox checkbox9;
 	@FXML private CheckBox checkbox10;
 	@FXML private CheckBox checkbox11;
@@ -169,7 +170,7 @@ public class Controller {
 		emailButton.setGraphic(new ImageView(image));
 		
 		bindSaveButton();
-		createSearchBar();
+		searchBox = new AutoCompleteSearchHandler(textField, listView1, listView2);
 		
 		try {
 			prepareTempFile();
@@ -219,7 +220,7 @@ public class Controller {
 			String changeText = change.getText();
 		    if (changeText.matches("[1-8]?")) {
 		    	if (newText.length() < 2) {
-			    	if (!newText.equals("")) {
+			    	if (!newText.equals("") && change.isContentChange()) {
 			    		period = Integer.parseInt(newText);
 			    		updateClasses();
 			    	}
@@ -291,30 +292,33 @@ public class Controller {
 		});
 	}
 	
-	private void createSearchBar() {
-		searchBox = new AutoCompleteSearchHandler(textField, listView);
+	private void addText(PDDocument doc, int row, int col, String text) throws IOException {
+//		PDFont font = PDType1Font.TIMES_ROMAN;
+//		float fontSize = 12;
+//		PDPage page = doc.getPages().get(0);
+//		PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.APPEND, true, true);
+//		contentStream.beginText();
+//		contentStream.setFont(font, fontSize);
+//		contentStream.setNonStrokingColor(0, 0, 0);
+//		contentStream.setTextMatrix(Matrix.getTranslateInstance(x, y));
+//		contentStream.showText(text);
+//		contentStream.endText();
+//		contentStream.close();
 	}
 	
-	private void addText(PDDocument doc, float x, float y, String text) throws IOException {
-		PDFont font = PDType1Font.TIMES_ROMAN;
-		float fontSize = 12;
-		PDPage page = doc.getPages().get(0);
-		PDPageContentStream contentStream = new PDPageContentStream(doc, page, AppendMode.APPEND, true, true);
-		contentStream.beginText();
-		contentStream.setFont(font, fontSize);
-		contentStream.setNonStrokingColor(0, 0, 0);
-		contentStream.setTextMatrix(Matrix.getTranslateInstance(x, y));
-		contentStream.showText(text);
-		contentStream.endText();
-		contentStream.close();
+	private void addAll(PDDocument doc, LinkedHashMap<String, Integer>[][][] seatingChart) {
+		
 	}
 	
 	public void generateSeatingChart() {
 		seatingHandler.clear();
-		System.out.println(period);
-		System.out.println(grades);
-		ArrayList<ClassPeriod> classes = periods.get(period - 1);
-		seatingHandler.fill(classes, grades, distanceComparator);
+		ArrayList<ClassPeriod> restrictions = searchBox.getRestrictions();
+		seatingHandler.fill(restrictions, grades);
+		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>();
+		for (ClassPeriod classPeriod : classes)
+			if (!restrictions.contains(classPeriod))
+				copy.add(classPeriod);
+		seatingHandler.fill(copy, grades, distanceComparator);
 		LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
 		System.out.println(Arrays.deepToString(seatingChart));
 		/*for (LinkedHashMap<String, Integer>[][] seatingRow : seatingChart) {
