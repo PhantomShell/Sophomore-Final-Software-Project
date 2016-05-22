@@ -13,14 +13,10 @@ public class ClassPeriodFiller {
 	static ArrayList<ArrayList<String>> studentData;
 	static File outFile;
 	
-	public ClassPeriodFiller() {
-		Scanner file = null;
-		try {
-			file = new Scanner(new File("SMCS10_noGrades.mer"));
-		}
-		catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+	public ClassPeriodFiller(String path) throws FileNotFoundException {
+		if (path == null)
+			throw new FileNotFoundException();
+		Scanner file = new Scanner(new File(path));
 		
 		//create Map of Fields (line 1)
 		field = new HashMap<String,Integer>();
@@ -38,10 +34,10 @@ public class ClassPeriodFiller {
 			}
 			studentData.add(student);
 		}
-		
+		file.close();
 	}
 	
-	public ArrayList<ArrayList<ClassPeriod>> fillPeriods() {
+	public ArrayList<ArrayList<ClassPeriod>> fillPeriods() throws Exception {
 		ArrayList<ArrayList<ClassPeriod>> periods = new ArrayList<ArrayList<ClassPeriod>>();
 		for (int i = 0; i < 8; i++) {
 			periods.add(new ArrayList<ClassPeriod>());
@@ -67,7 +63,6 @@ public class ClassPeriodFiller {
 			}
 		}
 		return periods;
-		
 	}
 	
 }

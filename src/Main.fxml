@@ -58,6 +58,8 @@
 												<CheckBox fx:id = "checkbox12" text = "12th" style = "-fx-font-size: 36" GridPane.rowIndex = "1" GridPane.columnIndex = "3" />
 											</children>
 										</GridPane>
+										<Label fx:id = "merWarning" GridPane.rowIndex = "2" GridPane.columnIndex = "0" wrapText = "true" style = "-fx-text-fill: red; -fx-font-family: 'Courier New';" />
+										<Label fx:id = "periodWarning" GridPane.rowIndex = "3" GridPane.columnIndex = "0" wrapText = "true" style = "-fx-text-fill: red; -fx-font-family: 'Courier New';" />
 									</children>
 								</GridPane>
 							</top>
@@ -136,7 +138,7 @@
 							</columnConstraints>
 							<children>
 								<TextField fx:id = "textField" GridPane.rowIndex = "0" GridPane.columnIndex = "0" maxHeight = "Infinity" />
-								<ListView fx:id = "listView1" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
+								<ListView fx:id = "results" GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
 							</children>
 						</GridPane>
 						<BorderPane>
@@ -147,13 +149,38 @@
 								<Label text = "Classes to Fill First" style = "-fx-font-size: 46" />
 							</top>
 							<center>
-								<ListView fx:id = "listView2" />
+								<ListView fx:id = "restrictionList" />
 							</center>
 						</BorderPane>
 					</items>
 				</SplitPane>
 			</content>
 		</Tab>
-		<Tab text = "Settings" />
+		<Tab text = "Settings">
+			<content>
+				<BorderPane>
+					<center>
+						<GridPane Vgap = "20">
+							<padding>
+								<Insets top = "40" />
+							</padding>
+							<columnConstraints>
+								<ColumnConstraints percentWidth = "50" halignment = "RIGHT" />
+								<ColumnConstraints percentWidth = "50" halignment = "LEFT" />
+							</columnConstraints>
+							<children>
+								<Button text = " Select .MER File " GridPane.rowIndex = "0" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" onAction = "#selectMerFile" fx:id = "merButton" />
+								<Label text = "Background Color  " GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "bgColorPicker" GridPane.rowIndex = "1" GridPane.columnIndex = "1" />
+								<Label text = "Foreground Color  " GridPane.rowIndex = "2" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "fgColorPicker" GridPane.rowIndex = "2" GridPane.columnIndex = "1" />
+								<Label text = "Text Color  " GridPane.rowIndex = "3" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "textColorPicker" GridPane.rowIndex = "3" GridPane.columnIndex = "1" />
+							</children>
+						</GridPane>
+					</center>
+				</BorderPane>
+			</content>
+		</Tab>
 	</tabs>
 </TabPane>

@@ -15,10 +15,6 @@ public class ClassPeriodSearchComparator implements Comparator<ClassPeriod> {
 	public void setSearchTerm(String searchTerm) {
 		this.searchTerm = searchTerm;
 	}
-	
-	public String getSearchTerm() {
-		return searchTerm;
-	}
 
     private int[] matches(String s1, String s2) {
         String max, min;

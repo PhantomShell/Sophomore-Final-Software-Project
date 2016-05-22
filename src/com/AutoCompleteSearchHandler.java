@@ -31,8 +31,8 @@ public class AutoCompleteSearchHandler {
 	final private ListView<String> restrictionList;
 	private ArrayList<ClassPeriod> classes;
 	private ObservableList<String> choices;
-	private ClassPeriodSearchComparator searchComparator;
 	private ArrayList<ClassPeriod> restrictions;
+	private ClassPeriodSearchComparator searchComparator;
 	
 	public AutoCompleteSearchHandler(TextField textField, ListView<String> listView1, ListView<String> listView2) {
 		searchBar = textField;
@@ -79,9 +79,9 @@ public class AutoCompleteSearchHandler {
 		updateChoices();
 	}
 	
-	class RestrictionCell extends ListCell<String> {
+	private class RestrictionCell extends ListCell<String> {
 		
-		public RestrictionCell() {
+		RestrictionCell() {
 			setOnDragDetected(event -> {
 				if (getItem() == null)
 					return;

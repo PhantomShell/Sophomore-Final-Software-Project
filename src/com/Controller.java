@@ -3,6 +3,7 @@ package com;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Scanner;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -49,6 +51,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Pagination;
@@ -85,13 +88,17 @@ public class Controller {
 	@FXML private SplitPane basicPane;
 	@FXML private Button saveButton;
 	@FXML private Button emailButton;
-	@FXML private ListView<String> listView1;
-	@FXML private ListView<String> listView2;
+	@FXML private ListView<String> results;
+	@FXML private ListView<String> restrictionList;
 	@FXML private CheckBox checkbox9;
 	@FXML private CheckBox checkbox10;
 	@FXML private CheckBox checkbox11;
 	@FXML private CheckBox checkbox12;
+	@FXML private Label merWarning;
+	@FXML private Label periodWarning;
 	@FXML private TextField textField;
+	@FXML private Button merButton;
+	@FXML private ColorPicker bgColorPicker;
 	
 	private boolean fitOnLoad;
 
@@ -100,12 +107,14 @@ public class Controller {
 	private DoubleProperty zoom;
 	private PageDimensions currentPageDimensions;
 	
+	private int period;
+	private String pathToMer;
+	
 	private ClassPeriodDistanceComparator distanceComparator;
 	private SeatingHandler seatingHandler;
 	private ClassPeriodFiller classPeriodFiller;
 	private ArrayList<ArrayList<ClassPeriod>> periods;
 	private ArrayList<Integer> grades;
-	private int period;
 	private ArrayList<ClassPeriod> classes;
 	private AutoCompleteSearchHandler searchBox;
 	
@@ -117,8 +126,17 @@ public class Controller {
 	private static final double ZOOM_DELTA = 1.2;
 	
 	public void initialize() {
-		classPeriodFiller = new ClassPeriodFiller();
-		periods = classPeriodFiller.fillPeriods();
+		try {
+			readConfigFile();
+			classPeriodFiller = new ClassPeriodFiller(pathToMer);
+			periods = classPeriodFiller.fillPeriods();
+		}
+		catch (Exception e) {
+			periods = null;
+			merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
+			if (!(e instanceof FileNotFoundException))
+				showErrorMessage("Invalid .MER file", e);
+		}
 		HashMap<String, Integer> roomDistances = new HashMap<String, Integer>();
 		setRoomDistances();
 		distanceComparator = new ClassPeriodDistanceComparator(roomDistances);
@@ -168,7 +186,7 @@ public class Controller {
 		emailButton.setGraphic(new ImageView(image));
 		
 		bindSaveButton();
-		searchBox = new AutoCompleteSearchHandler(textField, listView1, listView2);
+		searchBox = new AutoCompleteSearchHandler(textField, results, restrictionList);
 		
 		try {
 			prepareTempFile();
@@ -177,6 +195,24 @@ public class Controller {
 			e.printStackTrace();
 		}
 		loadFile(file);
+	}
+	
+	private void readConfigFile() throws FileNotFoundException {
+		Scanner file = new Scanner(new File(".config"));
+		while (file.hasNextLine()) {
+			String line = file.nextLine();
+			System.out.println(line);
+			if (line.startsWith("MER"))
+				pathToMer = line.substring(line.indexOf(":") + 1);
+		}
+		file.close();
+	}
+	
+	private void updateConfigFile() throws FileNotFoundException {
+		PrintWriter out = new PrintWriter(".config");
+		if (pathToMer != null)
+			out.println("MER:" + pathToMer);
+		out.close();
 	}
 	
 	private void setRoomDistances() {
@@ -204,13 +240,20 @@ public class Controller {
 	
 	private void updateClasses() {
 		classes = new ArrayList<ClassPeriod>();
-		ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
-		for (ClassPeriod classPeriod : classPeriods)
-			for (int grade : grades)
-				if (classPeriod.getClassSize(grade) > 0) {
-					classes.add(classPeriod);
-					break;
-				}
+		if (period != 0) {
+			if (periods != null) {
+				ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
+				for (ClassPeriod classPeriod : classPeriods)
+					for (int grade : grades)
+						if (classPeriod.getClassSize(grade) > 0) {
+							classes.add(classPeriod);
+							break;
+						}
+			}
+			periodWarning.setText("");
+		}
+		else
+			periodWarning.setText("\nNo period selected.");
 		searchBox.setChoices(classes);
 	}
 	
@@ -222,8 +265,8 @@ public class Controller {
 			String changeText = change.getText();
 		    if (changeText.matches("[1-8]?")) {
 		    	if (newText.length() < 2) {
-			    	if (!newText.equals("") && change.isContentChange()) {
-			    		period = Integer.parseInt(newText);
+			    	if (change.isContentChange()) {
+			    		period = newText.equals("") ? 0 : Integer.parseInt(newText);
 			    		updateClasses();
 			    	}
 			    	return change;
@@ -293,7 +336,32 @@ public class Controller {
 			}
 		});
 	}
-		
+	
+	@FXML public void selectMerFile() {
+		FileChooser fileChooser = new FileChooser();
+		fileChooser.setTitle("Select .MER File");
+		file = fileChooser.showOpenDialog(stage);
+		pathToMer = file.getAbsolutePath();
+		try {
+			classPeriodFiller = new ClassPeriodFiller(pathToMer);
+			periods = classPeriodFiller.fillPeriods();
+			merWarning.setText("");
+		}
+		catch (Exception e) {
+			periods = null;
+			merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
+			if (!(e instanceof FileNotFoundException))
+				showErrorMessage("Invalid .MER file", e);
+		}
+		merButton.setText(" " + file.getName() + " ");
+		try {
+			updateConfigFile();
+		} catch (FileNotFoundException e) {
+			System.out.println("lol");
+			System.out.println("what actually happened here tho");
+		}
+	}
+	
 	private void addAll(PDDocument doc, LinkedHashMap<String, Integer>[][][] seatingChart) throws IOException {
 		PDDocumentCatalog docCatalog = doc.getDocumentCatalog();
 		PDAcroForm acroForm = docCatalog.getAcroForm();
@@ -323,8 +391,20 @@ public class Controller {
 		acroForm.flatten();
 	}
 	
-	public void generateSeatingChart() {
+	@FXML public void generateSeatingChart() {
 		seatingHandler.clear();
+		if (pathToMer == null) {
+			showErrorMessage("No .MER file given", new NullPointerException());
+			return;
+		}
+		if (periods == null) {
+			showErrorMessage(".MER file not found", new FileNotFoundException());
+			return;
+		}
+		if (classes == null || (classes.size() == 0 && grades.size() != 0)) {
+			showErrorMessage("No period given", new NullPointerException());
+			return;
+		}
 		ArrayList<ClassPeriod> restrictions = searchBox.getRestrictions();
 		seatingHandler.fill(restrictions, grades);
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>();
@@ -423,7 +503,7 @@ public class Controller {
 		});
 	}
 	
-	@FXML private void loadFile(File file) {
+	private void loadFile(File file) {
 		if (file != null) {
 			final Task<PDFFile> loadFileTask = new Task<PDFFile>() {
 				@Override
@@ -520,23 +600,25 @@ public class Controller {
 	
 	private void showErrorMessage(String message, Throwable exception) {
 		final Stage dialogue = new Stage();
-		dialogue.initOwner(pagination.getScene().getWindow());
+		dialogue.initOwner(stage);
 		dialogue.initStyle(StageStyle.UNDECORATED);
 		final VBox root = new VBox(10);
+//		root.setStyle(arg0);
 		root.setPadding(new Insets(10));
 		StringWriter errorMessage = new StringWriter();
 		exception.printStackTrace(new PrintWriter(errorMessage));
 		final Label detailsLabel = new Label(errorMessage.toString());
 		TitledPane details = new TitledPane();
-		details.setText("Details:");
+		details.setText("Exception:");
 		Label briefMessageLabel = new Label(message);
+		briefMessageLabel.setStyle("-fx-font-size: 36");
 		final HBox detailsLabelHolder =new HBox();
 		
 		Button closeButton = new Button("OK");
 		closeButton.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				dialogue.hide();
+				dialogue.close();
 			}
 		});
 		HBox closeButtonHolder = new HBox();
@@ -565,7 +647,6 @@ public class Controller {
 		dialogue.setScene(scene);
 		dialogue.show();
 	}
-	
 	
 	/*
 	 * Struct-like class intended to represent the physical dimensions of a page in pixels
