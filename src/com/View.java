@@ -19,6 +19,7 @@ public class View extends Application {
 		primaryStage.setMaximized(true);
 		primaryStage.setMinHeight(bounds.getHeight());
 		primaryStage.setMinWidth(bounds.getWidth());
+		primaryStage.setTitle("Assembly Seating Chart Generator");
 		primaryStage.show();
 	}
 	

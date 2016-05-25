@@ -59,6 +59,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
@@ -68,18 +69,21 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.stage.Window;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 
 public class Controller {
 
 	@FXML private Stage stage;
+	@FXML private TabPane tabPane;
 	@FXML private Pagination pagination;
 	@FXML private Label currentZoomLabel;
 	@FXML private BorderPane previewPane;
@@ -99,33 +103,40 @@ public class Controller {
 	@FXML private TextField textField;
 	@FXML private Button merButton;
 	@FXML private ColorPicker bgColorPicker;
-	
-	private boolean fitOnLoad;
+	@FXML private ColorPicker fgColorPicker;
+	@FXML private ColorPicker textColorPicker;
 
 	private ObjectProperty<PDFFile> currentFile;
 	private ObjectProperty<ImageView> currentImage;
 	private DoubleProperty zoom;
 	private PageDimensions currentPageDimensions;
+	private PDDocument doc;
+	private File file;
+	private ExecutorService imageLoadService;
 	
 	private int period;
+	private boolean fitOnLoad;
 	private String pathToMer;
 	
 	private ClassPeriodDistanceComparator distanceComparator;
+	private HashMap<String, Integer> roomDistances;
 	private SeatingHandler seatingHandler;
 	private ClassPeriodFiller classPeriodFiller;
 	private ArrayList<ArrayList<ClassPeriod>> periods;
 	private ArrayList<Integer> grades;
 	private ArrayList<ClassPeriod> classes;
+	private HashMap<String, String> emailAddresses;
 	private AutoCompleteSearchHandler searchBox;
-	
-	private PDDocument doc;
-	private File file;
-	
-	private ExecutorService imageLoadService;
+	private String backgroundColor;
+	private String foregroundColor;
+	private String textColor;
 	
 	private static final double ZOOM_DELTA = 1.2;
 	
 	public void initialize() {
+		backgroundColor = "#f4f4f4";
+		foregroundColor = "#f4f4f4";
+		textColor = "#292929";
 		try {
 			readConfigFile();
 			classPeriodFiller = new ClassPeriodFiller(pathToMer);
@@ -137,10 +148,19 @@ public class Controller {
 			if (!(e instanceof FileNotFoundException))
 				showErrorMessage("Invalid .MER file", e);
 		}
-		HashMap<String, Integer> roomDistances = new HashMap<String, Integer>();
+				
+		bindColorPickers();
+		bgColorPicker.setValue(Color.web(backgroundColor));
+		fgColorPicker.setValue(Color.web(foregroundColor));
+		textColorPicker.setValue(Color.web(textColor));
+		updateColors();
+		
+		roomDistances = new HashMap<String, Integer>();
 		setRoomDistances();
+		
 		distanceComparator = new ClassPeriodDistanceComparator(roomDistances);
 		grades = new ArrayList<Integer>();
+		
 		int[][][] rowSizes =
 			{
 				{
@@ -153,12 +173,12 @@ public class Controller {
 					{15, 15, 15, 15, 10, 10, 5}
 				}
 			};
+		
 		seatingHandler = new SeatingHandler(rowSizes);
 		
 		createAndConfigureImageLoadService();
 
 		currentFile = new SimpleObjectProperty<>();
-		updateWindowTitleWhenFileChanges();
 		currentImage = new SimpleObjectProperty<>();
 		scroller.contentProperty().bind(currentImage);
 		
@@ -181,11 +201,14 @@ public class Controller {
 		File imageFile = new File("save.png");
 		Image image = new Image(imageFile.toURI().toString());
 		saveButton.setGraphic(new ImageView(image));
+		bindSaveButton();
+		
+		readEmailAddresses();
 		imageFile = new File("email.png");
 		image = new Image(imageFile.toURI().toString());
 		emailButton.setGraphic(new ImageView(image));
+		bindEmailButton();
 		
-		bindSaveButton();
 		searchBox = new AutoCompleteSearchHandler(textField, results, restrictionList);
 		
 		try {
@@ -198,25 +221,67 @@ public class Controller {
 	}
 	
 	private void readConfigFile() throws FileNotFoundException {
-		Scanner file = new Scanner(new File(".config"));
-		while (file.hasNextLine()) {
-			String line = file.nextLine();
-			System.out.println(line);
+		Scanner scanner = new Scanner(new File(".config"));
+		while (scanner.hasNextLine()) {
+			String line = scanner.nextLine();
+			String value = line.substring(line.indexOf(":") + 1);
 			if (line.startsWith("MER"))
-				pathToMer = line.substring(line.indexOf(":") + 1);
+				pathToMer = value;
+			else if (line.startsWith("BAC"))
+				backgroundColor = value;
+			else if (line.startsWith("FOR"))
+				foregroundColor = value;
+			else if (line.startsWith("TEX"))
+				textColor = value;
 		}
-		file.close();
+		scanner.close();
+	}
+	
+	public static String toRGBCode(Color color)
+    {
+        return String.format( "#%02X%02X%02X",
+            (int)(color.getRed() * 255),
+            (int)(color.getGreen() * 255),
+            (int)(color.getBlue() * 255));
+    }
+	
+	private void bindColorPickers() {
+		EventHandler<ActionEvent> eventHandler = new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				backgroundColor = toRGBCode(bgColorPicker.getValue());
+				foregroundColor = toRGBCode(fgColorPicker.getValue());
+				textColor = toRGBCode(textColorPicker.getValue());
+				updateColors();
+				try {
+					updateConfigFile();
+				}
+				catch (FileNotFoundException e) {}
+			}
+		};
+		bgColorPicker.setOnAction(eventHandler);
+		fgColorPicker.setOnAction(eventHandler);
+		textColorPicker.setOnAction(eventHandler);
+	}
+	
+	private void updateColors() {
+		tabPane.setStyle("-fx-font: 24 calibri; -fx-background: " + backgroundColor + "; -fx-color: " +
+				foregroundColor + "; -fx-mid-text-color: " + textColor + ";" + "; -fx-mid-text-color: " + textColor + ";");
 	}
 	
 	private void updateConfigFile() throws FileNotFoundException {
 		PrintWriter out = new PrintWriter(".config");
 		if (pathToMer != null)
 			out.println("MER:" + pathToMer);
+		out.println("BAC:" + backgroundColor);
+		out.println("FOR:" + foregroundColor);
+		out.println("TEX:" + textColor);
 		out.close();
 	}
 	
 	private void setRoomDistances() {
-		
+		roomDistances.put("195", 2);
+		roomDistances.put("199", 2);
 	}
 	
 	private void bindCheckBoxes() {
@@ -337,28 +402,95 @@ public class Controller {
 		});
 	}
 	
+	private void readEmailAddresses() {
+		try {
+			Scanner scanner = new Scanner(new File("emails.csv"));
+			while (scanner.hasNextLine()) {
+				String[] line = scanner.nextLine().split(":");
+				if (line[0] != null)
+					emailAddresses.put(line[0], line[1]);
+			}
+			scanner.close();
+		}
+		catch (FileNotFoundException e) {}
+	}
+	
+	private ArrayList<String> getRecipients() {
+		ArrayList<String> recipients = new ArrayList<String>();
+		for (ClassPeriod classPeriod : classes) {
+			String email = emailAddresses.get(classPeriod.toString());
+			if (email != null)
+				recipients.add(email);
+		}
+		return recipients;
+	}
+	
+	private void bindEmailButton() {
+		emailButton.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent event) {
+				final Stage emailStage = new Stage();
+				emailStage.initModality(Modality.APPLICATION_MODAL);
+				emailStage.initOwner(stage);
+				VBox emailVBox = new VBox();
+				emailVBox.setStyle("-fx-font-size: 24;");
+				
+				TextField subject = new TextField();
+				subject.setPromptText("Subject");
+				subject.setAlignment(Pos.TOP_LEFT);
+				
+				TextField body = new TextField();
+				body.setPromptText("Body");
+				body.setMaxHeight(Integer.MAX_VALUE);
+				body.setAlignment(Pos.TOP_LEFT);
+				VBox.setVgrow(body, Priority.ALWAYS);
+				
+				Button sendButton = new Button("Send Email");
+				sendButton.setMaxWidth(Integer.MAX_VALUE);
+				HBox.setHgrow(sendButton, Priority.ALWAYS);
+				sendButton.setOnAction(new EventHandler<ActionEvent>() {
+					@Override
+					public void handle(ActionEvent event) {
+						ArrayList<String> recipients = getRecipients();
+					}
+				});
+				
+				emailVBox.getChildren().addAll(subject, body, sendButton);
+				Scene emailScene = new Scene(emailVBox, 800, 600);
+				emailStage.setScene(emailScene);
+				emailVBox.requestFocus();
+				emailStage.setTitle("Email Seating Chart to Teachers");
+				emailStage.show();
+			}
+		});
+	}
+	
 	@FXML public void selectMerFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Select .MER File");
-		file = fileChooser.showOpenDialog(stage);
-		pathToMer = file.getAbsolutePath();
-		try {
-			classPeriodFiller = new ClassPeriodFiller(pathToMer);
-			periods = classPeriodFiller.fillPeriods();
-			merWarning.setText("");
-		}
-		catch (Exception e) {
-			periods = null;
-			merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
-			if (!(e instanceof FileNotFoundException))
+		File mer = fileChooser.showOpenDialog(stage);
+		if (mer != null) {
+			pathToMer = mer.getAbsolutePath();
+			try {
+				classPeriodFiller = new ClassPeriodFiller(pathToMer);
+				periods = classPeriodFiller.fillPeriods();
+				merWarning.setText("");
+			}
+			catch (FileNotFoundException e) {
+				periods = null;
+				merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
 				showErrorMessage("Invalid .MER file", e);
-		}
-		merButton.setText(" " + file.getName() + " ");
-		try {
-			updateConfigFile();
-		} catch (FileNotFoundException e) {
-			System.out.println("lol");
-			System.out.println("what actually happened here tho");
+			}
+			catch (Exception e) {
+				periods = null;
+				merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
+			}
+			merButton.setText(" " + mer.getName() + " ");
+			try {
+				updateConfigFile();
+			} catch (FileNotFoundException e) {
+				System.out.println("lol");
+				System.out.println("what actually happened here tho");
+			}
 		}
 	}
 	
@@ -395,6 +527,10 @@ public class Controller {
 		seatingHandler.clear();
 		if (pathToMer == null) {
 			showErrorMessage("No .MER file given", new NullPointerException());
+			return;
+		}
+		if (!pathToMer.endsWith(".mer")) {
+			showErrorMessage("Invalid .MER file", new UnsupportedOperationException());
 			return;
 		}
 		if (periods == null) {
@@ -437,24 +573,6 @@ public class Controller {
 		});
 	}
 
-	private void updateWindowTitleWhenFileChanges() {
-		currentFile.addListener(new ChangeListener<PDFFile>() {
-			@Override
-			public void changed(ObservableValue<? extends PDFFile> observable, PDFFile oldFile, PDFFile newFile) {
-				try {
-					String title = newFile == null ? "PDF Viewer" : newFile.getStringMetadata("Title");
-					Window window = pagination.getScene().getWindow();
-					if (window instanceof Stage) {
-						((Stage)window).setTitle(title);
-					}
-				} catch (IOException e) {
-					showErrorMessage("Could not read title from pdf file", e);
-				}
-			}
-			
-		});
-	}
-	
 	private void bindPaginationToCurrentFile() {
 		currentFile.addListener(new ChangeListener<PDFFile>() {
 			@Override
@@ -569,7 +687,7 @@ public class Controller {
 				Image image = SwingFXUtils.toFXImage(buffImage, null);
 				ImageView imageView = new ImageView(image);
 				imageView.setPreserveRatio(true);
-				return imageView ;
+				return imageView;
 			}
 		};
 
@@ -599,11 +717,12 @@ public class Controller {
 	}
 	
 	private void showErrorMessage(String message, Throwable exception) {
-		final Stage dialogue = new Stage();
-		dialogue.initOwner(stage);
-		dialogue.initStyle(StageStyle.UNDECORATED);
+		final Stage dialog = new Stage();
+		dialog.initModality(Modality.APPLICATION_MODAL);
+		dialog.initOwner(stage);
+		dialog.initStyle(StageStyle.UNDECORATED);
 		final VBox root = new VBox(10);
-//		root.setStyle(arg0);
+		root.setStyle("-fx-border-color: black;");
 		root.setPadding(new Insets(10));
 		StringWriter errorMessage = new StringWriter();
 		exception.printStackTrace(new PrintWriter(errorMessage));
@@ -618,7 +737,7 @@ public class Controller {
 		closeButton.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				dialogue.close();
+				dialog.close();
 			}
 		});
 		HBox closeButtonHolder = new HBox();
@@ -638,14 +757,14 @@ public class Controller {
 					detailsLabelHolder.getChildren().add(detailsLabel);
 				else
 					detailsLabelHolder.getChildren().remove(detailsLabel);
-				dialogue.sizeToScene();
+				dialog.sizeToScene();
 			}
 			
 		});
 		final Scene scene = new Scene(root);
 
-		dialogue.setScene(scene);
-		dialogue.show();
+		dialog.setScene(scene);
+		dialog.show();
 	}
 	
 	/*

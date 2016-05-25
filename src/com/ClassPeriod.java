@@ -29,14 +29,6 @@ public class ClassPeriod {
 		}
 	}
 	
-	public String getFirstName() {
-		return firstName;
-	}
-	
-	public String getLastName() {
-		return lastName;
-	}
-	
 	public int incrementClassSize(int grade) {
 		switch (grade) {
 			case 9: return gradeCount9++;
@@ -47,6 +39,15 @@ public class ClassPeriod {
 		}
 	}
 	
+	public String getFirstName() {
+		return firstName;
+	}
+	
+	public String getLastName() {
+		return lastName;
+	}
+	
+	@Override
 	public String toString() {
 		return lastName + ", " + firstName;
 	}

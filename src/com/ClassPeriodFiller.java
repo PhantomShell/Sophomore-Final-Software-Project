@@ -14,7 +14,7 @@ public class ClassPeriodFiller {
 	static File outFile;
 	
 	public ClassPeriodFiller(String path) throws FileNotFoundException {
-		if (path == null)
+		if (path == null || !path.endsWith(".mer"))
 			throw new FileNotFoundException();
 		Scanner file = new Scanner(new File(path));
 		

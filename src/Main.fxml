@@ -7,7 +7,7 @@
 <?import javafx.collections.*?>
 <?import java.lang.*?>
 
-<TabPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/" fx:controller = "com.Controller" tabClosingPolicy = "UNAVAILABLE" style = "-fx-font: 24 calibri" stylesheets = "@../src/control.css">
+<TabPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/" fx:controller = "com.Controller" tabClosingPolicy = "UNAVAILABLE" stylesheets = "@../src/control.css" fx:id = "tabPane">
 	<tabs>
 		<Tab text = "Basic Generation">
 			<content>
@@ -170,12 +170,13 @@
 							</columnConstraints>
 							<children>
 								<Button text = " Select .MER File " GridPane.rowIndex = "0" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" onAction = "#selectMerFile" fx:id = "merButton" />
-								<Label text = "Background Color  " GridPane.rowIndex = "1" GridPane.columnIndex = "0" />
-								<ColorPicker fx:id = "bgColorPicker" GridPane.rowIndex = "1" GridPane.columnIndex = "1" />
-								<Label text = "Foreground Color  " GridPane.rowIndex = "2" GridPane.columnIndex = "0" />
-								<ColorPicker fx:id = "fgColorPicker" GridPane.rowIndex = "2" GridPane.columnIndex = "1" />
-								<Label text = "Text Color  " GridPane.rowIndex = "3" GridPane.columnIndex = "0" />
-								<ColorPicker fx:id = "textColorPicker" GridPane.rowIndex = "3" GridPane.columnIndex = "1" />
+								<Label text = "Customization" style = "-fx-font-size: 36" GridPane.rowIndex = "1" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" />
+								<Label text = "Background Color  " GridPane.rowIndex = "2" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "bgColorPicker" GridPane.rowIndex = "2" GridPane.columnIndex = "1" />
+								<Label text = "Foreground Color  " GridPane.rowIndex = "3" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "fgColorPicker" GridPane.rowIndex = "3" GridPane.columnIndex = "1" />
+								<Label text = "Text Color  " GridPane.rowIndex = "4" GridPane.columnIndex = "0" />
+								<ColorPicker fx:id = "textColorPicker" GridPane.rowIndex = "4" GridPane.columnIndex = "1" />
 							</children>
 						</GridPane>
 					</center>

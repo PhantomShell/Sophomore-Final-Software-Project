@@ -126,7 +126,7 @@ public class AutoCompleteSearchHandler {
             	VBox vBox = new VBox();
             	hBox.setAlignment(Pos.CENTER);
             	vBox.setAlignment(Pos.CENTER);
-            	final Button upButton = new Button("▴");
+            	final Button upButton = new Button("▲");
             	upButton.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
@@ -139,7 +139,7 @@ public class AutoCompleteSearchHandler {
                     	catch (IndexOutOfBoundsException e) {}
                     }
                 });
-            	final Button downButton = new Button("▾");
+            	final Button downButton = new Button("▼");
             	downButton.setOnAction(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent event) {
