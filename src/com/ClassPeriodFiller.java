@@ -29,7 +29,7 @@ public class ClassPeriodFiller {
 		studentData = new ArrayList<ArrayList<String>>();
 		while(file.hasNext()){
 			ArrayList<String> student = new ArrayList<String>();
-			for(String studentField: file.nextLine().split("\",\"")){
+			for(String studentField: file.nextLine().replaceAll("\"$|^\"", "").split("\",\"")){
 				student.add(studentField.trim());
 			}
 			studentData.add(student);

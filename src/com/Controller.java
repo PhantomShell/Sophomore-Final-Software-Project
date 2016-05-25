@@ -19,7 +19,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Properties;
 import java.util.Scanner;
+
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.mail.Authenticator;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.Message.RecipientType;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
@@ -130,6 +149,8 @@ public class Controller {
 	private String backgroundColor;
 	private String foregroundColor;
 	private String textColor;
+	private String email;
+	private String password;
 	
 	private static final double ZOOM_DELTA = 1.2;
 	
@@ -203,6 +224,10 @@ public class Controller {
 		saveButton.setGraphic(new ImageView(image));
 		bindSaveButton();
 		
+		email = "370149@mcpsmd.net";
+		//YOOO DON'T LOOK AT THE NEXT LINE PLS
+		password =                                                                                                                                                                                                                                                                              "Ydis7948";
+		emailAddresses = new HashMap<String, String>();
 		readEmailAddresses();
 		imageFile = new File("email.png");
 		image = new Image(imageFile.toURI().toString());
@@ -265,8 +290,8 @@ public class Controller {
 	}
 	
 	private void updateColors() {
-		tabPane.setStyle("-fx-font: 24 calibri; -fx-background: " + backgroundColor + "; -fx-color: " +
-				foregroundColor + "; -fx-mid-text-color: " + textColor + ";" + "; -fx-mid-text-color: " + textColor + ";");
+		tabPane.setStyle("-fx-font: 24 calibri; -fx-background: " + backgroundColor + "; -fx-color: " + foregroundColor +
+				"; -fx-mid-text-color: " + textColor + ";" + "; -fx-dark-text-color: " + textColor + ";" + "; -fx-light-text-color: " + textColor + ";");
 	}
 	
 	private void updateConfigFile() throws FileNotFoundException {
@@ -407,8 +432,7 @@ public class Controller {
 			Scanner scanner = new Scanner(new File("emails.csv"));
 			while (scanner.hasNextLine()) {
 				String[] line = scanner.nextLine().split(":");
-				if (line[0] != null)
-					emailAddresses.put(line[0], line[1]);
+				emailAddresses.put(line[0], line[1]);
 			}
 			scanner.close();
 		}
@@ -425,6 +449,45 @@ public class Controller {
 		return recipients;
 	}
 	
+	private void sendEmail(ArrayList<String> recipients, String subject, String body) {
+		Properties props = new Properties();
+		props.put("mail.transport.protocol", "smtp");
+		props.put("mail.smtp.host","smtp.gmail.com");
+		props.put("mail.smtp.port", "587");
+		props.put("mail.smtp.auth", "true");
+		props.put("mail.smtp.starttls.enable","true");
+		Session session = Session.getDefaultInstance(props, new Authenticator() {
+			@Override
+	        protected PasswordAuthentication getPasswordAuthentication() {
+	            return new PasswordAuthentication(email, password);
+	        }
+		});
+		Message message = new MimeMessage(session);
+		InternetAddress[] addresses = new InternetAddress[recipients.size()];
+		for (int i = 0; i < addresses.length; i++) {
+			try {
+				addresses[i] = new InternetAddress(recipients.get(i));
+			}
+			catch (AddressException e) {}
+		}
+		try {
+			message.setRecipients(RecipientType.CC, addresses);
+			message.setSubject(subject);
+			Multipart multipart = new MimeMultipart();
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setText(body);
+			multipart.addBodyPart(messageBodyPart);
+			messageBodyPart = new MimeBodyPart();
+			DataSource source = new FileDataSource(file.getAbsolutePath());
+			messageBodyPart.setDataHandler(new DataHandler(source));
+			messageBodyPart.setFileName(file.getAbsolutePath());
+			multipart.addBodyPart(messageBodyPart);
+			message.setContent(multipart);
+			Transport.send(message);
+		}
+		catch (MessagingException e) {e.printStackTrace();}
+	}
+	
 	private void bindEmailButton() {
 		emailButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
@@ -437,12 +500,14 @@ public class Controller {
 				TextField subject = new TextField();
 				subject.setPromptText("Subject");
 				subject.setAlignment(Pos.TOP_LEFT);
+				subject.setStyle("-fx-focus-color: transparent;");
 				
 				TextField body = new TextField();
 				body.setPromptText("Body");
 				body.setMaxHeight(Integer.MAX_VALUE);
 				body.setAlignment(Pos.TOP_LEFT);
 				VBox.setVgrow(body, Priority.ALWAYS);
+				body.setStyle("-fx-focus-color: transparent;");
 				
 				Button sendButton = new Button("Send Email");
 				sendButton.setMaxWidth(Integer.MAX_VALUE);
@@ -450,7 +515,15 @@ public class Controller {
 				sendButton.setOnAction(new EventHandler<ActionEvent>() {
 					@Override
 					public void handle(ActionEvent event) {
-						ArrayList<String> recipients = getRecipients();
+						try {
+							String subjectLine = subject.getText(), bodyContent = body.getText();
+							emailStage.close();
+							ArrayList<String> recipients = getRecipients();
+							sendEmail(recipients, subjectLine, bodyContent);
+						}
+						catch (NullPointerException e) {
+							showErrorMessage("No classes selected", e);
+						}
 					}
 				});
 				
