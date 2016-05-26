@@ -11,7 +11,7 @@
 	<tabs>
 		<Tab text = "Basic Generation">
 			<content>
-				<SplitPane fx:id = "basicPane" dividerPositions = "0.4">
+				<SplitPane dividerPositions = "0.4">
 					<items>
 						<BorderPane>
 							<padding>
@@ -160,9 +160,9 @@
 			<content>
 				<BorderPane>
 					<center>
-						<GridPane Vgap = "20">
+						<GridPane Vgap = "20" style = "-fx-font-size: 36">
 							<padding>
-								<Insets top = "40" />
+								<Insets top = "50" />
 							</padding>
 							<columnConstraints>
 								<ColumnConstraints percentWidth = "50" halignment = "RIGHT" />
@@ -170,7 +170,7 @@
 							</columnConstraints>
 							<children>
 								<Button text = " Select .MER File " GridPane.rowIndex = "0" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" onAction = "#selectMerFile" fx:id = "merButton" />
-								<Label text = "Customization" style = "-fx-font-size: 36" GridPane.rowIndex = "1" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" />
+								<Label text = "&#10;Customization" style = "-fx-font-size: 48" GridPane.rowIndex = "1" GridPane.columnIndex = "0" GridPane.columnSpan = "2" GridPane.halignment = "CENTER" />
 								<Label text = "Background Color  " GridPane.rowIndex = "2" GridPane.columnIndex = "0" />
 								<ColorPicker fx:id = "bgColorPicker" GridPane.rowIndex = "2" GridPane.columnIndex = "1" />
 								<Label text = "Foreground Color  " GridPane.rowIndex = "3" GridPane.columnIndex = "0" />

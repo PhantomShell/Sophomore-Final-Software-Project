@@ -77,7 +77,6 @@ import javafx.scene.control.Pagination;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
-import javafx.scene.control.SplitPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -108,7 +107,6 @@ public class Controller {
 	@FXML private BorderPane previewPane;
 	@FXML private ScrollPane scroller;
 	@FXML private Spinner<Integer> spinner;
-	@FXML private SplitPane basicPane;
 	@FXML private Button saveButton;
 	@FXML private Button emailButton;
 	@FXML private ListView<String> results;
@@ -158,6 +156,7 @@ public class Controller {
 		backgroundColor = "#f4f4f4";
 		foregroundColor = "#f4f4f4";
 		textColor = "#292929";
+		
 		try {
 			readConfigFile();
 			classPeriodFiller = new ClassPeriodFiller(pathToMer);
@@ -198,24 +197,15 @@ public class Controller {
 		seatingHandler = new SeatingHandler(rowSizes);
 		
 		createAndConfigureImageLoadService();
-
 		currentFile = new SimpleObjectProperty<>();
 		currentImage = new SimpleObjectProperty<>();
 		scroller.contentProperty().bind(currentImage);
 		
 		zoom = new SimpleDoubleProperty(1);
-		zoom.addListener(new ChangeListener<Number>() {
-			@Override
-			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-				updateImage(pagination.getCurrentPageIndex());
-			}
-		});
-		
-		currentZoomLabel.textProperty().bind(Bindings.format("%.0f %%", zoom.multiply(100)));
+		bindZoomKeys();
 		
 		bindPaginationToCurrentFile();
 		createPaginationPageFactory();
-		bindZoomKeys();
 		restrictSpinner();
 		bindCheckBoxes();
 		
@@ -305,8 +295,57 @@ public class Controller {
 	}
 	
 	private void setRoomDistances() {
-		roomDistances.put("195", 2);
-		roomDistances.put("199", 2);
+		String[] roomsInOrder = new String[] {
+			"64",
+			"63",
+			"61",
+			"60",
+			"54",
+			"9",
+			"55",
+			"57",
+			"58",
+			"6",
+			"13",
+			"12",
+			"11",
+			"10",
+			"42",
+			"51",
+			"44",
+			"50",
+			"45",
+			"46",
+			"4",
+			"3",
+			"14",
+			"GYM1",
+			"GYM2",
+			"48",
+			"2",
+			"49",
+			"15",
+			"47",
+			"2",
+			"18",
+			"21",
+			"22",
+			"41",
+			"19",
+			"20",
+			"36",
+			"38",
+			"39",
+			"17",
+			"16",
+			"34",
+			"35",
+			"1",
+			"24",
+			"23"
+		};
+		for (int i = 0; i < roomsInOrder.length; i++)
+			roomDistances.put(roomsInOrder[i], i);
 	}
 	
 	private void bindCheckBoxes() {
@@ -442,7 +481,7 @@ public class Controller {
 	private ArrayList<String> getRecipients() {
 		ArrayList<String> recipients = new ArrayList<String>();
 		for (ClassPeriod classPeriod : classes) {
-			String email = emailAddresses.get(classPeriod.toString());
+			String email = emailAddresses.get(classPeriod.toString().replaceAll(" ", "").toLowerCase());
 			if (email != null)
 				recipients.add(email);
 		}
@@ -471,7 +510,7 @@ public class Controller {
 			catch (AddressException e) {}
 		}
 		try {
-			message.setRecipients(RecipientType.CC, addresses);
+			message.setRecipients(RecipientType.BCC, addresses);
 			message.setSubject(subject);
 			Multipart multipart = new MimeMultipart();
 			BodyPart messageBodyPart = new MimeBodyPart();
@@ -515,14 +554,17 @@ public class Controller {
 				sendButton.setOnAction(new EventHandler<ActionEvent>() {
 					@Override
 					public void handle(ActionEvent event) {
+						String subjectLine = subject.getText(), bodyContent = body.getText();
+						emailStage.close();
 						try {
-							String subjectLine = subject.getText(), bodyContent = body.getText();
-							emailStage.close();
 							ArrayList<String> recipients = getRecipients();
 							sendEmail(recipients, subjectLine, bodyContent);
 						}
-						catch (NullPointerException e) {
-							showErrorMessage("No classes selected", e);
+						catch (Exception e) {
+							if (e instanceof NullPointerException)
+								showErrorMessage("No classes selected", e);
+							else
+								showErrorMessage("No email addresses/recipients", e);
 						}
 					}
 				});
@@ -546,6 +588,7 @@ public class Controller {
 			try {
 				classPeriodFiller = new ClassPeriodFiller(pathToMer);
 				periods = classPeriodFiller.fillPeriods();
+				updateClasses();
 				merWarning.setText("");
 			}
 			catch (FileNotFoundException e) {
@@ -586,7 +629,11 @@ public class Controller {
 							value += teacher + " " + seatingChart[i][j][k].get(teacher);
 						}
 						COSDictionary dict = field.getCOSObject();
-				        dict.setString(COSName.DA, "/Helv 12 Tf 0 g");
+						double size = 10;
+						if (value.length() > 30) {
+							size -= (value.length() - 30) / 4.3;
+						}
+				        dict.setString(COSName.DA, "/Helv " + size + " Tf 0 g");
 				        field.getCOSObject().addAll(dict);
 				        field.setValue(value);
 					}
@@ -666,7 +713,14 @@ public class Controller {
 	}
 	
 	private void bindZoomKeys() {
-		basicPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
+		zoom.addListener(new ChangeListener<Number>() {
+			@Override
+			public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+				updateImage(pagination.getCurrentPageIndex());
+			}
+		});
+		currentZoomLabel.textProperty().bind(Bindings.format("%.0f %%", zoom.multiply(100)));
+		tabPane.addEventHandler(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
 			public void handle(KeyEvent event) {
 				if (event.getCode() == KeyCode.EQUALS)
 					zoomIn();
