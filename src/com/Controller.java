@@ -145,6 +145,7 @@ public class Controller {
 	private ArrayList<Integer> grades;
 	private ArrayList<ClassPeriod> classes;
 	private HashMap<String, String> emailAddresses;
+	private ArrayList<ClassPeriod> classCopy;
 	private AutoCompleteSearchHandler searchBox;
 	private String backgroundColor;
 	private String foregroundColor;
@@ -173,7 +174,6 @@ public class Controller {
 			merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
 			if (!(e instanceof FileNotFoundException))
 				showErrorMessage("Invalid .MER file", e);
-			e.printStackTrace();
 		}
 				
 		bindColorPickers();
@@ -507,7 +507,7 @@ public class Controller {
 	
 	private ArrayList<String> getRecipients() {
 		ArrayList<String> recipients = new ArrayList<String>();
-		for (ClassPeriod classPeriod : classes) {
+		for (ClassPeriod classPeriod : classCopy) {
 			String email = emailAddresses.get(classPeriod.toString().replaceAll(" ", "").toLowerCase());
 			if (email != null)
 				recipients.add(email);
@@ -557,51 +557,59 @@ public class Controller {
 	private void bindEmailButton() {
 		emailButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
-				final Stage emailStage = new Stage();
-				emailStage.initModality(Modality.APPLICATION_MODAL);
-				emailStage.initOwner(stage);
-				VBox emailVBox = new VBox();
-				emailVBox.setStyle("-fx-font-size: 24;");
-				
-				TextField subject = new TextField();
-				subject.setPromptText("Subject");
-				subject.setAlignment(Pos.TOP_LEFT);
-				subject.setStyle("-fx-focus-color: transparent;");
-				
-				TextField body = new TextField();
-				body.setPromptText("Body");
-				body.setMaxHeight(Integer.MAX_VALUE);
-				body.setAlignment(Pos.TOP_LEFT);
-				VBox.setVgrow(body, Priority.ALWAYS);
-				body.setStyle("-fx-focus-color: transparent;");
-				
-				Button sendButton = new Button("Send Email");
-				sendButton.setMaxWidth(Integer.MAX_VALUE);
-				HBox.setHgrow(sendButton, Priority.ALWAYS);
-				sendButton.setOnAction(new EventHandler<ActionEvent>() {
-					@Override
-					public void handle(ActionEvent event) {
-						String subjectLine = subject.getText(), bodyContent = body.getText();
-						emailStage.close();
-						try {
-							ArrayList<String> recipients = getRecipients();
-							sendEmail(recipients, subjectLine, bodyContent);
+				if (classCopy != null) {
+					final Stage emailStage = new Stage();
+					emailStage.initModality(Modality.APPLICATION_MODAL);
+					emailStage.initOwner(stage);
+					VBox emailVBox = new VBox();
+					emailVBox.setStyle("-fx-font-size: 24;");
+					
+					TextField subject = new TextField();
+					subject.setPromptText("Subject");
+					subject.setAlignment(Pos.TOP_LEFT);
+					subject.setStyle("-fx-focus-color: transparent;");
+					
+					TextField body = new TextField();
+					body.setPromptText("Body");
+					body.setMaxHeight(Integer.MAX_VALUE);
+					body.setAlignment(Pos.TOP_LEFT);
+					VBox.setVgrow(body, Priority.ALWAYS);
+					body.setStyle("-fx-focus-color: transparent;");
+					
+					Button sendButton = new Button("Send Email");
+					sendButton.setMaxWidth(Integer.MAX_VALUE);
+					HBox.setHgrow(sendButton, Priority.ALWAYS);
+					sendButton.setOnAction(new EventHandler<ActionEvent>() {
+						@Override
+						public void handle(ActionEvent event) {
+							String subjectLine = subject.getText(), bodyContent = body.getText();
+							emailStage.close();
+							try {
+								ArrayList<String> recipients = getRecipients();
+								sendEmail(recipients, subjectLine, bodyContent);
+							}
+							catch (Exception e) {
+								if (e instanceof NullPointerException)
+									showErrorMessage("No seating chart generated", e);
+								else
+									showErrorMessage("No email addresses/recipients", e);
+							}
 						}
-						catch (Exception e) {
-							if (e instanceof NullPointerException)
-								showErrorMessage("No classes selected", e);
-							else
-								showErrorMessage("No email addresses/recipients", e);
-						}
-					}
-				});
-				
-				emailVBox.getChildren().addAll(subject, body, sendButton);
-				Scene emailScene = new Scene(emailVBox, 800, 600);
-				emailStage.setScene(emailScene);
-				emailVBox.requestFocus();
-				emailStage.setTitle("Email Seating Chart to Teachers");
-				emailStage.show();
+					});
+					
+					emailVBox.getChildren().addAll(subject, body, sendButton);
+					Scene emailScene = new Scene(emailVBox, 800, 600);
+					emailStage.setScene(emailScene);
+					emailVBox.requestFocus();
+					emailStage.setTitle("Email Seating Chart to Teachers");
+					File iconFile = new File("icon.png");
+					Image icon = new Image(iconFile.toURI().toString());
+					emailStage.getIcons().add(icon);
+					emailStage.show();
+				}
+				else {
+					showErrorMessage("No seating chart generated", new NullPointerException());
+				}
 			}
 		});
 	}
@@ -696,6 +704,7 @@ public class Controller {
 			showErrorMessage("Too many students", new IndexOutOfBoundsException());
 			return;
 		}
+		classCopy = new ArrayList<ClassPeriod>(classes);
 		ArrayList<ClassPeriod> restrictions = searchBox.getRestrictions();
 		seatingHandler.fill(restrictions, grades, male, female);
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>();
@@ -911,7 +920,6 @@ public class Controller {
 		details.setAnimated(false);
 
 		details.expandedProperty().addListener(new ChangeListener<Boolean>() {
-
 			@Override
 			public void changed(ObservableValue<? extends Boolean> observable,
 					Boolean oldValue, Boolean newValue) {
@@ -921,7 +929,6 @@ public class Controller {
 					detailsLabelHolder.getChildren().remove(detailsLabel);
 				dialog.sizeToScene();
 			}
-			
 		});
 		final Scene scene = new Scene(root);
 		
