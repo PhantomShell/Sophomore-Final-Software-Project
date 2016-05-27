@@ -48,17 +48,18 @@ public class ClassPeriodFiller {
 			String firstName = student.get(field.get("TCHF"));
 			String lastName = student.get(field.get("TCHL"));
 			int grade = Integer.parseInt(student.get(field.get("GR")));
+			boolean male = student.get(field.get("G")).equals("M");
 			ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
 			boolean found = false;
 			for (ClassPeriod classPeriod : classPeriods)
 				if (classPeriod.toString().equals(lastName + ", " + firstName)) {
-					classPeriod.incrementClassSize(grade);
+					classPeriod.incrementClassSize(grade, male);
 					found = true;
 					break;
 				}
 			if (!found) {
 				ClassPeriod newClass = new ClassPeriod(room, firstName, lastName);
-				newClass.incrementClassSize(grade);
+				newClass.incrementClassSize(grade, male);
 				classPeriods.add(newClass);
 			}
 		}

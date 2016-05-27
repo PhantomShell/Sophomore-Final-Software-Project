@@ -46,26 +46,34 @@ public class SeatingHandler {
 		}
 	}
 	
-	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades) {
+	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, boolean male, boolean female) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
 		for (ClassPeriod period : copy) {
 			String teacher = period.getLastName();
 			int seats = 1;
 			for (int grade: grades)
-				seats += period.getClassSize(grade);
+				seats += period.getClassSize(grade, male, female);
 			fill(teacher, seats);
 		}
 	}
 	
-	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, ClassPeriodDistanceComparator comparator) {
+	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, boolean male, boolean female, ClassPeriodDistanceComparator comparator) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
 		Collections.sort(copy, comparator);
-		fill(copy, grades);
+		fill(copy, grades, male, female);
 	}
 	
 	public void clear() {
 		for (int i = 0; i < rooms.length; i++)
 			for (int j = 0; j < rooms[i].length; j++)
 				rooms[i][j].clear();
+	}
+	
+	public int capacity() {
+		int sum = 0;
+		for (Room[] row : rooms)
+			for (Room room : row)
+				sum += room.capacity();
+		return sum;
 	}
 }

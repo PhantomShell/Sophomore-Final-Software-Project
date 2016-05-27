@@ -47,4 +47,11 @@ public class Room {
 		filledSeats = 0;
 		lastUnfilled = 0;
 	}
+	
+	public int capacity() {
+		int sum = 0;
+		for (Row row : rows)
+			sum += row.getSize();
+		return sum;
+	}
 }

@@ -122,6 +122,8 @@ public class Controller {
 	@FXML private ColorPicker bgColorPicker;
 	@FXML private ColorPicker fgColorPicker;
 	@FXML private ColorPicker textColorPicker;
+	@FXML private CheckBox checkboxM;
+	@FXML private CheckBox checkboxF;
 
 	private ObjectProperty<PDFFile> currentFile;
 	private ObjectProperty<ImageView> currentImage;
@@ -149,10 +151,14 @@ public class Controller {
 	private String textColor;
 	private String email;
 	private String password;
+	private boolean male;
+	private boolean female;
 	
 	private static final double ZOOM_DELTA = 1.2;
 	
 	public void initialize() {
+		male = true;
+		female = true;
 		backgroundColor = "#f4f4f4";
 		foregroundColor = "#f4f4f4";
 		textColor = "#292929";
@@ -167,6 +173,7 @@ public class Controller {
 			merWarning.setText(".MER file not selected, not found, or invalid. Go to settings to change the .MER file.");
 			if (!(e instanceof FileNotFoundException))
 				showErrorMessage("Invalid .MER file", e);
+			e.printStackTrace();
 		}
 				
 		bindColorPickers();
@@ -365,6 +372,26 @@ public class Controller {
 		checkbox10.selectedProperty().addListener(createListener.apply(10));
 		checkbox11.selectedProperty().addListener(createListener.apply(11));
 		checkbox12.selectedProperty().addListener(createListener.apply(12));
+		checkboxM.selectedProperty().addListener(new ChangeListener<Boolean>() {
+			@Override
+		    public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+		        if (newValue && !oldValue)
+		        	male = true;
+		        else if (!newValue && oldValue)
+		        	male = false;
+		        updateClasses();
+			}
+		});
+		checkboxF.selectedProperty().addListener(new ChangeListener<Boolean>() {
+			@Override
+		    public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+		        if (newValue && !oldValue)
+		        	female = true;
+		        else if (!newValue && oldValue)
+		        	female = false;
+		        updateClasses();
+			}
+		});
 	}
 	
 	private void updateClasses() {
@@ -374,7 +401,7 @@ public class Controller {
 				ArrayList<ClassPeriod> classPeriods = periods.get(period - 1);
 				for (ClassPeriod classPeriod : classPeriods)
 					for (int grade : grades)
-						if (classPeriod.getClassSize(grade) > 0) {
+						if (classPeriod.getClassSize(grade, male, female) > 0) {
 							classes.add(classPeriod);
 							break;
 						}
@@ -657,17 +684,25 @@ public class Controller {
 			showErrorMessage(".MER file not found", new FileNotFoundException());
 			return;
 		}
-		if (classes == null || (classes.size() == 0 && grades.size() != 0)) {
+		if (classes == null || (period == 0)) {
 			showErrorMessage("No period given", new NullPointerException());
 			return;
 		}
+		int size = 0;
+		for (int grade : grades)
+			for (ClassPeriod classPeriod : classes)
+				size += classPeriod.getClassSize(grade, male, female);
+		if (size > seatingHandler.capacity()) {
+			showErrorMessage("Too many students", new IndexOutOfBoundsException());
+			return;
+		}
 		ArrayList<ClassPeriod> restrictions = searchBox.getRestrictions();
-		seatingHandler.fill(restrictions, grades);
+		seatingHandler.fill(restrictions, grades, male, female);
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>();
 		for (ClassPeriod classPeriod : classes)
 			if (!restrictions.contains(classPeriod))
 				copy.add(classPeriod);
-		seatingHandler.fill(copy, grades, distanceComparator);
+		seatingHandler.fill(copy, grades, male, female, distanceComparator);
 		LinkedHashMap<String, Integer>[][][] seatingChart = seatingHandler.getSeatingChart();
 		try {
 			doc.close();
@@ -889,7 +924,7 @@ public class Controller {
 			
 		});
 		final Scene scene = new Scene(root);
-
+		
 		dialog.setScene(scene);
 		dialog.show();
 	}
