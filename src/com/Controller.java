@@ -171,7 +171,10 @@ public class Controller {
 	 * Initializes the properties of the GUI and creates the objects
 	 * involved in the back-end calculations for the seating chart
 	 * generation.
-	 * @see AutoCompleteSearchHandler, ClassPeriodDistanceComparator, ClassPeriodFiller, SeatingHandler
+	 * @see AutoCompleteSearchHandler
+	 * @see ClassPeriodDistanceComparator
+	 * @see ClassPeriodFiller
+	 * @see SeatingHandler
 	 */
 	public void initialize() {
 		male = true;
@@ -299,7 +302,10 @@ public class Controller {
 	/**
 	 * Connects the ColorPicker node of the GUI to the change of
 	 * the colors of the other node.
-	 * @see ColorPicker, #bgColorPicker, #fgColorPicker, #textColorPicker
+	 * @see ColorPicker
+	 * @see #bgColorPicker
+	 * @see #fgColorPicker
+	 * @see #textColorPicker
 	 */
 	private void bindColorPickers() {
 		EventHandler<ActionEvent> eventHandler = new EventHandler<ActionEvent>() {
@@ -405,7 +411,15 @@ public class Controller {
 	/**
 	 * Binds the six checkboxes to change which grades are active
 	 * and which genders.
-	 * @see #checkbox9, #checkbox10, #checkbox11, #checkbox12, #checkboxM, #checkboxF, #grades, #male, #female
+	 * @see #checkbox9
+	 * @see #checkbox10
+	 * @see #checkbox11
+	 * @see #checkbox12
+	 * @see #checkboxM
+	 * @see #checkboxF
+	 * @see #grades
+	 * @see #male
+	 * @see #female
 	 */
 	private void bindCheckBoxes() {
 		Function<Integer, ChangeListener<Boolean>> createListener = (grade) -> {
@@ -449,7 +463,10 @@ public class Controller {
 	/**
 	 * Updates the list of classes to reflect the settings chosen
 	 * on the GUI.
-	 * @see #classes, ClassPeriod, #period, #periods
+	 * @see #classes
+	 * @see ClassPeriod
+	 * @see #period
+	 * @see #periods
 	 */
 	private void updateClasses() {
 		classes = new ArrayList<ClassPeriod>();
@@ -474,7 +491,8 @@ public class Controller {
 	 * Restricts the spinner for period selection so that the text
 	 * entered meets specific requirements, such as that no non-
 	 * numeric characters are typed in.
-	 * @see #spinner, #period
+	 * @see #spinner
+	 * @see #period
 	 */
 	private void restrictSpinner() {
 		period = 1;
@@ -530,7 +548,8 @@ public class Controller {
 	 * Creates a temporary file in the temp folder and loads the
 	 * current PDF document from the template file.
 	 * @throws IOException
-	 * @see #file, #doc
+	 * @see #file
+	 * @see #doc
 	 */
 	private void prepareTempFile() throws IOException {
 		doc = PDDocument.load(new File("template.pdf"));
@@ -585,8 +604,9 @@ public class Controller {
 	/**
 	 * Converts the list of current classes to a list of the
 	 * associated teacher email addresses.
-	 * @return ArrayList<String> The list of email addresses.
-	 * @see #classCopy, #emailAddresses
+	 * @return ArrayList&lt;String&gt; The list of email addresses.
+	 * @see #classCopy
+	 * @see #emailAddresses
 	 */
 	private ArrayList<String> getRecipients() {
 		ArrayList<String> recipients = new ArrayList<String>();
@@ -650,7 +670,8 @@ public class Controller {
 	 * enter a subject and body for the emails. When the button at
 	 * the bottom is pressed, the email is sent the teachers currently
 	 * on the seating chart.
-	 * @see #emailButton, #classCopy
+	 * @see #emailButton
+	 * @see #classCopy
 	 */
 	private void bindEmailButton() {
 		emailButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -716,7 +737,9 @@ public class Controller {
 	 * Creates the method for the button used for selecting the .MER
 	 * file, which creates an open file dialog for the user to select
 	 * to select the file.
-	 * @see #pathToMer, #classPeriodFiller, #periods
+	 * @see #pathToMer
+	 * @see #classPeriodFiller
+	 * @see #periods
 	 */
 	@FXML public void selectMerFile() {
 		FileChooser fileChooser = new FileChooser();
@@ -793,7 +816,12 @@ public class Controller {
 	 * Creates a seating chart based on the specified conditions and
 	 * saves it to a new temporary file. Handles any errors encountered
 	 * in the process and displays fitting messages.
-	 * @see #classes, #classCopy, #seatingHandler, #grades, #male, #female
+	 * @see #classes
+	 * @see #classCopy
+	 * @see #seatingHandler
+	 * @see #grades
+	 * @see #male
+	 * @see #female
 	 */
 	@FXML public void generateSeatingChart() {
 		seatingHandler.clear();
@@ -860,7 +888,8 @@ public class Controller {
 	
 	/**
 	 * Binds the pagination to mirror the file that is currently loaded.
-	 * @see #currentFile, #pagination
+	 * @see #currentFile
+	 * @see #pagination
 	 * @author james-d
 	 */
 	private void bindPaginationToCurrentFile() {
@@ -885,7 +914,9 @@ public class Controller {
 	/**
 	 * Binds the zoom value to change the zoom of the pagination and adds
 	 * listening for plus and minus to change the zoom of the preview.
-	 * @see #zoom, #currentZoomLabel, #pagination
+	 * @see #zoom
+	 * @see #currentZoomLabel
+	 * @see #pagination
 	 * @author james-d
 	 */
 	private void bindZoomKeys() {
@@ -908,7 +939,8 @@ public class Controller {
 	
 	/**
 	 * Binds the pagination to change with the page and file selection.
-	 * @see #pagination, #currentFile
+	 * @see #pagination
+	 * @see #currentFile
 	 * @author james-d
 	 */
 	private void createPaginationPageFactory() {
@@ -932,7 +964,8 @@ public class Controller {
 	/**
 	 * Loads the specified PDF file into the preview pagination.
 	 * @param file The File object to be loaded.
-	 * @see #pagination, #fitOnLoad
+	 * @see #pagination
+	 * @see #fitOnLoad
 	 * @author james-d
 	 */
 	private void loadFile(File file) {
@@ -973,7 +1006,9 @@ public class Controller {
 	/**
 	 * Method for the zoom in button to increase the zoom of the preview.
 	 * Zooms by a factor of {@value #ZOOM_DELTA}.
-	 * @see #zoomOut(), #zoomFit(), #ZOOM_DELTA
+	 * @see #zoomOut()
+	 * @see #zoomFit()
+	 * @see #ZOOM_DELTA
 	 * @author james-d
 	 */
 	@FXML private void zoomIn() {
@@ -983,7 +1018,9 @@ public class Controller {
 	/**
 	 * Method for the zoom out button to decrease the zoom of the preview.
 	 * Zooms by a factor of {@value #ZOOM_DELTA}.
-	 * @see #zoomIn(), #zoomFit(), #ZOOM_DELTA
+	 * @see #zoomIn()
+	 * @see #zoomFit()
+	 * @see #ZOOM_DELTA
 	 * @author james-d
 	 */
 	@FXML private void zoomOut() {
@@ -993,7 +1030,8 @@ public class Controller {
 	/**
 	 * Method for the zoom fit button to match the size of the preview to
 	 * the size of the pagination.
-	 * @see #zoomIn(), #zoomOut()
+	 * @see #zoomIn()
+	 * @see #zoomOut()
 	 * @author james-d
 	 */
 	@FXML private void zoomFit() {
@@ -1007,7 +1045,8 @@ public class Controller {
 	 * selected PDF file at the current zoom level; zooms to fit if directly
 	 * after loading the file.
 	 * @param pageNumber The page number of the PDF file to render.
-	 * @see #pagination, #fitOnLoad
+	 * @see #pagination
+	 * @see #fitOnLoad
 	 * @author james-d
 	 */
 	private void updateImage(final int pageNumber) {

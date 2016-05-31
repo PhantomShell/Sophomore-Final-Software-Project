@@ -10,7 +10,8 @@ import java.util.Comparator;
  * Credits to Apache Software Foundation (ASF) for the Jaro-Winkler
  * distance code.
  * @author Jagan Prem, ASF
- * @see Comparator, ClassPeriod
+ * @see Comparator
+ * @see ClassPeriod
  */
 public class ClassPeriodSearchComparator implements Comparator<ClassPeriod> {
 

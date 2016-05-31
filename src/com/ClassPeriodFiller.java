@@ -51,9 +51,10 @@ public class ClassPeriodFiller {
 	
 	/**
 	 * Creates a filled list of periods based on the student data.
-	 * @return ArrayList<ArrayList<ClassPeriod>> The periods of classes.
+	 * @return ArrayList&lt;ArrayList&lt;ClassPeriod&gt;&gt; The periods of classes.
 	 * @throws Exception
-	 * @see #studentData, #field
+	 * @see #studentData
+	 * @see #field
 	 */
 	public ArrayList<ArrayList<ClassPeriod>> fillPeriods() throws Exception {
 		ArrayList<ArrayList<ClassPeriod>> periods = new ArrayList<ArrayList<ClassPeriod>>();

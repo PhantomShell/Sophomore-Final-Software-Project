@@ -33,7 +33,8 @@ public class Row {
 	/**
 	 * Gets the amount of seats yet unfilled.
 	 * @return int The number of unfilled seats.
-	 * @see #getSize(), #filledSeats
+	 * @see #getSize()
+	 * @see #filledSeats
 	 */
 	private int remainingSpace() {
 		return getSize() - filledSeats;
@@ -50,7 +51,7 @@ public class Row {
 	
 	/**
 	 * Returns a copy of the seating arrangement of the rows.
-	 * @return LinkedHashMap<String, Integer> The seating arrangement.
+	 * @return LinkedHashMap&lt;String, Integer&gt; The seating arrangement.
 	 * @see #sections
 	 */
 	public LinkedHashMap<String, Integer> getSections() {
@@ -76,7 +77,8 @@ public class Row {
 	
 	/**
 	 * Clears the Row of all filled seats.
-	 * @see #filledSeats, #sections
+	 * @see #filledSeats
+	 * @see #sections
 	 */
 	public void clear() {
 		filledSeats = 0;

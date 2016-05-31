@@ -7,7 +7,8 @@ import java.util.HashMap;
  * Comparator for comparing the distances between two
  * ClassPeriod and the auditorium.
  * @author Jagan Prem
- * @see Comparator, ClassPeriod
+ * @see Comparator
+ * @see ClassPeriod
  */
 public class ClassPeriodDistanceComparator implements Comparator<ClassPeriod> {
 	
@@ -15,7 +16,7 @@ public class ClassPeriodDistanceComparator implements Comparator<ClassPeriod> {
 	
 	/**
 	 * Takes a HashMap providing the distance to each room.
-	 * @param roomDistances
+	 * @param roomDistances The distances from each of the rooms to the auditorium.
 	 * @see HashMap
 	 */
 	public ClassPeriodDistanceComparator(HashMap<String, Integer> roomDistances) {

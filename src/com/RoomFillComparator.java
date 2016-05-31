@@ -6,7 +6,8 @@ import java.util.Comparator;
  * Comparator for sorting Room objects by how full they are,
  * from least to greatest.
  * @author Jagan Prem
- * @see Comparator, Room
+ * @see Comparator
+ * @see Room
  */
 public class RoomFillComparator implements Comparator<Room> {
 	

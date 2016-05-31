@@ -29,7 +29,8 @@ import javafx.util.Callback;
  * based off the Jaro-Winkler distance. Also uses ListViews
  * for viewing the results and selected restrictions.
  * @author Jagan Prem
- * @see TextField, ListView
+ * @see TextField
+ * @see ListView
  */
 public class AutoCompleteSearchHandler {
 	
@@ -221,7 +222,8 @@ public class AutoCompleteSearchHandler {
 	
 	/**
 	 * Updates the ListView of restrictions to match what has been selected.
-	 * @see #restrictionList, #restrictions
+	 * @see #restrictionList
+	 * @see #restrictions
 	 */
 	private void updateRestrictionList() {
 		restrictionList.getItems().clear();
@@ -233,7 +235,8 @@ public class AutoCompleteSearchHandler {
 	
 	/**
 	 * Updates the ListView of suggestions.
-	 * @see #choices, #classes
+	 * @see #choices
+	 * @see #classes
 	 */
 	private void updateListView() {
 		choices = FXCollections.observableArrayList();
@@ -245,7 +248,9 @@ public class AutoCompleteSearchHandler {
 	/**
 	 * Sorts the suggestions by how close they are to the search term, and
 	 * then calls to have the suggestions updated.
-	 * @see #searchComparator, #classes, #updateListView()
+	 * @see #searchComparator
+	 * @see #classes
+	 * @see #updateListView()
 	 */
 	private void updateChoices() {
 		searchComparator.setSearchTerm(searchBar.getText());
@@ -256,7 +261,10 @@ public class AutoCompleteSearchHandler {
 	/**
 	 * Sets the available suggestions to the provided list of classes.
 	 * @param classes The ArrayList of ClassPeriod to select from.
-	 * @see #restrictions, #restrictionsList, #classes, #updateChoices
+	 * @see #restrictions
+	 * @see #restrictionList
+	 * @see #classes
+	 * @see #updateChoices
 	 */
 	public void setChoices(ArrayList<ClassPeriod> classes) {
 		restrictions = new ArrayList<ClassPeriod>();
@@ -268,7 +276,12 @@ public class AutoCompleteSearchHandler {
 	/**
 	 * Either sets the search term to the nearest suggestion, or if it is a
 	 * valid choice, adds it to the restrictions list.
-	 * @see #restrictions, #setClosestChoice, #classes, #updateChoices, #updateRestrictionList(), #searchBar
+	 * @see #restrictions
+	 * @see #setClosestChoice
+	 * @see #classes
+	 * @see #updateChoices
+	 * @see #updateRestrictionList()
+	 * @see #searchBar
 	 */
 	private void handleSearch() {
 		String teacher = searchBar.getText();
@@ -290,7 +303,7 @@ public class AutoCompleteSearchHandler {
 	
 	/**
 	 * Returns the #restrictions currently selected.
-	 * @return ArrayList<ClassPeriod> The list of restrictions.
+	 * @return ArrayList&lt;ClassPeriod&gt; The list of restrictions.
 	 */
 	public ArrayList<ClassPeriod> getRestrictions() {
 		return restrictions;

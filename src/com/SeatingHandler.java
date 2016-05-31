@@ -33,7 +33,7 @@ public class SeatingHandler {
 	/**
 	 * Generates the seating chart for the auditorium based on the
 	 * individual arrangements of all the rooms within.
-	 * @return LinkedHashMap<String, Integer>[][][] The seating chart.
+	 * @return LinkedHashMap&lt;String, Integer&gt;[][][] The seating chart.
 	 * @see Room#getRowChart()
 	 */
 	@SuppressWarnings("unchecked")
@@ -77,7 +77,8 @@ public class SeatingHandler {
 	 * @param grades The list of grades of students.
 	 * @param male Whether to include male students.
 	 * @param female Whether to include female students.
-	 * @see ClassPeriod#getClassSize(int, boolean, boolean), #fill(String, int)
+	 * @see ClassPeriod#getClassSize(int, boolean, boolean)
+	 * @see #fill(String, int)
 	 */
 	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, boolean male, boolean female) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);
@@ -98,7 +99,8 @@ public class SeatingHandler {
 	 * @param male Whether to include male students.
 	 * @param female Whether to include female students.
 	 * @param comparator The comparator to sort rooms by.
-	 * @see ClassPeriodDistanceComparator, #fill(ArrayList, ArrayList, boolean, boolean)
+	 * @see ClassPeriodDistanceComparator
+	 * @see #fill(ArrayList, ArrayList, boolean, boolean)
 	 */
 	public void fill(ArrayList<ClassPeriod> classes, ArrayList<Integer> grades, boolean male, boolean female, ClassPeriodDistanceComparator comparator) {
 		ArrayList<ClassPeriod> copy = new ArrayList<ClassPeriod>(classes);

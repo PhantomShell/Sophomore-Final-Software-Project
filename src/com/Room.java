@@ -44,7 +44,7 @@ public class Room {
 	
 	/**
 	 * Returns a chart of how the rows contained are filled.
-	 * @return LinkedHashMap<String, Integer>[] The arrangement of seats between the rows.
+	 * @return LinkedHashMap&lt;String, Integer&gt;[] The arrangement of seats between the rows.
 	 * @see Row#getSections()
 	 */
 	@SuppressWarnings("unchecked")
@@ -61,7 +61,9 @@ public class Room {
 	 * @param teacher The teacher whose class is filling in.
 	 * @param seats The number of seats to fill in.
 	 * @return int The number of seats filled.
-	 * @see #lastUnfilled, #filledSeats, Row#fill(String, int)
+	 * @see #lastUnfilled
+	 * @see #filledSeats
+	 * @see Row#fill(String, int)
 	 */
 	public int fill(String teacher, int seats) {
 		int sum = 0;
@@ -77,7 +79,9 @@ public class Room {
 	
 	/**
 	 * Clears the room of all filled seats.
-	 * @see Row#clear(), #filledSeats, #lastUnfilled
+	 * @see Row#clear()
+	 * @see #filledSeats
+	 * @see #lastUnfilled
 	 */
 	public void clear() {
 		for (Row row : rows)
