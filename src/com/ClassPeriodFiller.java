@@ -7,12 +7,24 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.ArrayList;
 
+/**
+ * Class to fill ClassPeriod objects based on data from a
+ * given .MER file.
+ * @author Jagan Prem, Mark Estep
+ */
 public class ClassPeriodFiller {
 	
 	static Map<String, Integer> field;
 	static ArrayList<ArrayList<String>> studentData;
 	static File outFile;
 	
+	/**
+	 * Prepares for filling the classes by loading in the students'
+	 * data and the field names and indices.
+	 * @author Mark Estep
+	 * @param path The path to the .MER file.
+	 * @throws FileNotFoundException When the .MER file is not found.
+	 */
 	public ClassPeriodFiller(String path) throws FileNotFoundException {
 		if (path == null || !path.endsWith(".mer"))
 			throw new FileNotFoundException();
@@ -37,6 +49,12 @@ public class ClassPeriodFiller {
 		file.close();
 	}
 	
+	/**
+	 * Creates a filled list of periods based on the student data.
+	 * @return ArrayList<ArrayList<ClassPeriod>> The periods of classes.
+	 * @throws Exception
+	 * @see #studentData, #field
+	 */
 	public ArrayList<ArrayList<ClassPeriod>> fillPeriods() throws Exception {
 		ArrayList<ArrayList<ClassPeriod>> periods = new ArrayList<ArrayList<ClassPeriod>>();
 		for (int i = 0; i < 8; i++) {

@@ -98,6 +98,16 @@ import javafx.stage.StageStyle;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 
+/**
+ * <h1>Controller Class for JavaFX Project</h1>
+ * Class used for interfacing between the JavaFX GUI and the 
+ * back-end calculations. Binds all the actions of the GUI and 
+ * creates nodes such as the PDF preview pagination.
+ * <p>
+ * Credit to <a href = "https://github.com/james-d/PdfViewer">james-d</a>
+ * for sections of the code relating to the PDF previewing.
+ * @author Jagan Prem, james-d
+ */
 public class Controller {
 
 	@FXML private Stage stage;
@@ -157,6 +167,12 @@ public class Controller {
 	
 	private static final double ZOOM_DELTA = 1.2;
 	
+	/**
+	 * Initializes the properties of the GUI and creates the objects
+	 * involved in the back-end calculations for the seating chart
+	 * generation.
+	 * @see AutoCompleteSearchHandler, ClassPeriodDistanceComparator, ClassPeriodFiller, SeatingHandler
+	 */
 	public void initialize() {
 		male = true;
 		female = true;
@@ -167,6 +183,7 @@ public class Controller {
 		try {
 			readConfigFile();
 			classPeriodFiller = new ClassPeriodFiller(pathToMer);
+			merButton.setText(new File(pathToMer).getName());
 			periods = classPeriodFiller.fillPeriods();
 		}
 		catch (Exception e) {
@@ -242,6 +259,11 @@ public class Controller {
 		loadFile(file);
 	}
 	
+	/**
+	 * Reads in the values from .config (i.e. the location of the
+	 * .MER file and the the GUI colors.)
+	 * @throws FileNotFoundException When .config is not found.
+	 */
 	private void readConfigFile() throws FileNotFoundException {
 		Scanner scanner = new Scanner(new File(".config"));
 		while (scanner.hasNextLine()) {
@@ -259,6 +281,13 @@ public class Controller {
 		scanner.close();
 	}
 	
+	/**
+	 * Converts a Color object to a String of a hexadecimal color 
+	 * format, prefixed by a number symbol.
+	 * @param color The Color object to be converted.
+	 * @return String The hexadecimal string.
+	 * @see Color
+	 */
 	public static String toRGBCode(Color color)
     {
         return String.format( "#%02X%02X%02X",
@@ -267,6 +296,11 @@ public class Controller {
             (int)(color.getBlue() * 255));
     }
 	
+	/**
+	 * Connects the ColorPicker node of the GUI to the change of
+	 * the colors of the other node.
+	 * @see ColorPicker, #bgColorPicker, #fgColorPicker, #textColorPicker
+	 */
 	private void bindColorPickers() {
 		EventHandler<ActionEvent> eventHandler = new EventHandler<ActionEvent>() {
 			@Override
@@ -286,11 +320,19 @@ public class Controller {
 		textColorPicker.setOnAction(eventHandler);
 	}
 	
+	/**
+	 * Changes the colors of the GUI elements to match the selected 
+	 * colors.
+	 */
 	private void updateColors() {
-		tabPane.setStyle("-fx-font: 24 calibri; -fx-background: " + backgroundColor + "; -fx-color: " + foregroundColor +
-				"; -fx-mid-text-color: " + textColor + ";" + "; -fx-dark-text-color: " + textColor + ";" + "; -fx-light-text-color: " + textColor + ";");
+		tabPane.setStyle("-fx-font: 24 calibri; -fx-background: " + backgroundColor + "; -fx-color: " + foregroundColor + "; -fx-mid-text-color: "
+						+ textColor + "; -fx-dark-text-color: " + textColor + ";" + "; -fx-light-text-color: " + textColor + ";");
 	}
 	
+	/**
+	 * Writes to .config with the updated settings.
+	 * @throws FileNotFoundException When .config is not found.
+	 */
 	private void updateConfigFile() throws FileNotFoundException {
 		PrintWriter out = new PrintWriter(".config");
 		if (pathToMer != null)
@@ -301,6 +343,11 @@ public class Controller {
 		out.close();
 	}
 	
+	/**
+	 * Assigns a distance constant to each of the room numbers of
+	 * the school.
+	 * @see #roomDistances
+	 */
 	private void setRoomDistances() {
 		String[] roomsInOrder = new String[] {
 			"64",
@@ -355,6 +402,11 @@ public class Controller {
 			roomDistances.put(roomsInOrder[i], i);
 	}
 	
+	/**
+	 * Binds the six checkboxes to change which grades are active
+	 * and which genders.
+	 * @see #checkbox9, #checkbox10, #checkbox11, #checkbox12, #checkboxM, #checkboxF, #grades, #male, #female
+	 */
 	private void bindCheckBoxes() {
 		Function<Integer, ChangeListener<Boolean>> createListener = (grade) -> {
 			return new ChangeListener<Boolean>() {
@@ -394,6 +446,11 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Updates the list of classes to reflect the settings chosen
+	 * on the GUI.
+	 * @see #classes, ClassPeriod, #period, #periods
+	 */
 	private void updateClasses() {
 		classes = new ArrayList<ClassPeriod>();
 		if (period != 0) {
@@ -413,6 +470,12 @@ public class Controller {
 		searchBox.setChoices(classes);
 	}
 	
+	/**
+	 * Restricts the spinner for period selection so that the text
+	 * entered meets specific requirements, such as that no non-
+	 * numeric characters are typed in.
+	 * @see #spinner, #period
+	 */
 	private void restrictSpinner() {
 		period = 1;
 		IntegerSpinnerValueFactory valueFactory = new IntegerSpinnerValueFactory(1, 8);
@@ -463,6 +526,12 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Creates a temporary file in the temp folder and loads the
+	 * current PDF document from the template file.
+	 * @throws IOException
+	 * @see #file, #doc
+	 */
 	private void prepareTempFile() throws IOException {
 		doc = PDDocument.load(new File("template.pdf"));
 		for (File toDel : new File("temp").listFiles())
@@ -473,6 +542,10 @@ public class Controller {
 		file.deleteOnExit();
 	}
 	
+	/**
+	 * Binds the save button to open a save dialog when clicked.
+	 * @see #saveButton
+	 */
 	private void bindSaveButton() {
 		saveButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
@@ -493,6 +566,10 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Reads the email addresses in from emails.csv.
+	 * @see #emailAddresses
+	 */
 	private void readEmailAddresses() {
 		try {
 			Scanner scanner = new Scanner(new File("emails.csv"));
@@ -505,6 +582,12 @@ public class Controller {
 		catch (FileNotFoundException e) {}
 	}
 	
+	/**
+	 * Converts the list of current classes to a list of the
+	 * associated teacher email addresses.
+	 * @return ArrayList<String> The list of email addresses.
+	 * @see #classCopy, #emailAddresses
+	 */
 	private ArrayList<String> getRecipients() {
 		ArrayList<String> recipients = new ArrayList<String>();
 		for (ClassPeriod classPeriod : classCopy) {
@@ -515,6 +598,14 @@ public class Controller {
 		return recipients;
 	}
 	
+	/**
+	 * Sends an email to the specified recipient addresses with a
+	 * provided subject and body text and with the seating chart
+	 * attached.
+	 * @param recipients The email addresses to send the chart to.
+	 * @param subject The subject line of the emails sent out.
+	 * @param body The message body of the emails to be sent.
+	 */
 	private void sendEmail(ArrayList<String> recipients, String subject, String body) {
 		Properties props = new Properties();
 		props.put("mail.transport.protocol", "smtp");
@@ -554,6 +645,13 @@ public class Controller {
 		catch (MessagingException e) {e.printStackTrace();}
 	}
 	
+	/**
+	 * Binds the email button to open a dialog in which the user can
+	 * enter a subject and body for the emails. When the button at
+	 * the bottom is pressed, the email is sent the teachers currently
+	 * on the seating chart.
+	 * @see #emailButton, #classCopy
+	 */
 	private void bindEmailButton() {
 		emailButton.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent event) {
@@ -614,6 +712,12 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Creates the method for the button used for selecting the .MER
+	 * file, which creates an open file dialog for the user to select
+	 * to select the file.
+	 * @see #pathToMer, #classPeriodFiller, #periods
+	 */
 	@FXML public void selectMerFile() {
 		FileChooser fileChooser = new FileChooser();
 		fileChooser.setTitle("Select .MER File");
@@ -645,6 +749,13 @@ public class Controller {
 		}
 	}
 	
+	/**
+	 * Adds the values from the generated seating chart to the PDF
+	 * template and flattens the form.
+	 * @param doc The document to add the fields in.
+	 * @param seatingChart The seating chart to fill in from.
+	 * @throws IOException When a PDF field is not found.
+	 */
 	private void addAll(PDDocument doc, LinkedHashMap<String, Integer>[][][] seatingChart) throws IOException {
 		PDDocumentCatalog docCatalog = doc.getDocumentCatalog();
 		PDAcroForm acroForm = docCatalog.getAcroForm();
@@ -678,6 +789,12 @@ public class Controller {
 		acroForm.flatten();
 	}
 	
+	/**
+	 * Creates a seating chart based on the specified conditions and
+	 * saves it to a new temporary file. Handles any errors encountered
+	 * in the process and displays fitting messages.
+	 * @see #classes, #classCopy, #seatingHandler, #grades, #male, #female
+	 */
 	@FXML public void generateSeatingChart() {
 		seatingHandler.clear();
 		if (pathToMer == null) {
@@ -725,7 +842,11 @@ public class Controller {
 		}
 		loadFile(file);		
 	}
-
+	
+	/**
+	 * Creates the image loader for the PDF preview and threads it.
+	 * @see #imageLoadService
+	 */
 	private void createAndConfigureImageLoadService() {
 		imageLoadService = Executors.newSingleThreadExecutor(new ThreadFactory() {
 			@Override
@@ -736,7 +857,12 @@ public class Controller {
 			}
 		});
 	}
-
+	
+	/**
+	 * Binds the pagination to mirror the file that is currently loaded.
+	 * @see #currentFile, #pagination
+	 * @author james-d
+	 */
 	private void bindPaginationToCurrentFile() {
 		currentFile.addListener(new ChangeListener<PDFFile>() {
 			@Override
@@ -756,6 +882,12 @@ public class Controller {
 		pagination.disableProperty().bind(Bindings.isNull(currentFile));
 	}
 	
+	/**
+	 * Binds the zoom value to change the zoom of the pagination and adds
+	 * listening for plus and minus to change the zoom of the preview.
+	 * @see #zoom, #currentZoomLabel, #pagination
+	 * @author james-d
+	 */
 	private void bindZoomKeys() {
 		zoom.addListener(new ChangeListener<Number>() {
 			@Override
@@ -774,6 +906,11 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Binds the pagination to change with the page and file selection.
+	 * @see #pagination, #currentFile
+	 * @author james-d
+	 */
 	private void createPaginationPageFactory() {
 		pagination.setPageFactory(new Callback<Integer, Node>() {
 			@Override
@@ -792,6 +929,12 @@ public class Controller {
 		});
 	}
 	
+	/**
+	 * Loads the specified PDF file into the preview pagination.
+	 * @param file The File object to be loaded.
+	 * @see #pagination, #fitOnLoad
+	 * @author james-d
+	 */
 	private void loadFile(File file) {
 		if (file != null) {
 			final Task<PDFFile> loadFileTask = new Task<PDFFile>() {
@@ -827,20 +970,46 @@ public class Controller {
 		}
 	}
 	
+	/**
+	 * Method for the zoom in button to increase the zoom of the preview.
+	 * Zooms by a factor of {@value #ZOOM_DELTA}.
+	 * @see #zoomOut(), #zoomFit(), #ZOOM_DELTA
+	 * @author james-d
+	 */
 	@FXML private void zoomIn() {
-		zoom.set(zoom.get()*ZOOM_DELTA);
+		zoom.set(zoom.get() * ZOOM_DELTA);
 	}
 	
+	/**
+	 * Method for the zoom out button to decrease the zoom of the preview.
+	 * Zooms by a factor of {@value #ZOOM_DELTA}.
+	 * @see #zoomIn(), #zoomFit(), #ZOOM_DELTA
+	 * @author james-d
+	 */
 	@FXML private void zoomOut() {
-		zoom.set(zoom.get()/ZOOM_DELTA);
+		zoom.set(zoom.get() / ZOOM_DELTA);
 	}
 	
+	/**
+	 * Method for the zoom fit button to match the size of the preview to
+	 * the size of the pagination.
+	 * @see #zoomIn(), #zoomOut()
+	 * @author james-d
+	 */
 	@FXML private void zoomFit() {
 		double horizontalZoom = (scroller.getWidth() - 20) / currentPageDimensions.width;
 		double verticalZoom = (scroller.getHeight() - 20) / currentPageDimensions.height;
 		zoom.set(Math.min(horizontalZoom, verticalZoom));
 	}
 	
+	/**
+	 * Updates the pagination preview with an image node rendered from the
+	 * selected PDF file at the current zoom level; zooms to fit if directly
+	 * after loading the file.
+	 * @param pageNumber The page number of the PDF file to render.
+	 * @see #pagination, #fitOnLoad
+	 * @author james-d
+	 */
 	private void updateImage(final int pageNumber) {
 		final Task<ImageView> updateImageTask = new Task<ImageView>() {
 			@Override
@@ -887,6 +1056,13 @@ public class Controller {
 		imageLoadService.submit(updateImageTask);
 	}
 	
+	/**
+	 * Shows an error message on the GUI based on a provided message and
+	 * exception.
+	 * @param message The message to display on the modal box.
+	 * @param exception The exception to show in detail.
+	 * @author james-d
+	 */
 	private void showErrorMessage(String message, Throwable exception) {
 		final Stage dialog = new Stage();
 		dialog.initModality(Modality.APPLICATION_MODAL);
@@ -936,13 +1112,12 @@ public class Controller {
 		dialog.show();
 	}
 	
-	/*
-	 * Struct-like class intended to represent the physical dimensions of a page in pixels
-	 * (as opposed to the dimensions of the (possibly zoomed) view.
+	/**
+	 * Struct-like class intended to represent the physical dimensions of a page
+	 * in pixels (as opposed to the dimensions of the (possibly zoomed) view.
 	 * Used to compute zoom factors for zoomToFit and zoomToWidth.
-	 * 
+	 * @author james-d
 	 */
-	
 	private class PageDimensions {
 		private double width;
 		private double height;

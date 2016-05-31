@@ -3,9 +3,21 @@ package com;
 import java.util.Comparator;
 import java.util.HashMap;
 
+/**
+ * Comparator for comparing the distances between two
+ * ClassPeriod and the auditorium.
+ * @author Jagan Prem
+ * @see Comparator, ClassPeriod
+ */
 public class ClassPeriodDistanceComparator implements Comparator<ClassPeriod> {
+	
 	private HashMap<String, Integer> roomDistances;
 	
+	/**
+	 * Takes a HashMap providing the distance to each room.
+	 * @param roomDistances
+	 * @see HashMap
+	 */
 	public ClassPeriodDistanceComparator(HashMap<String, Integer> roomDistances) {
 		this.roomDistances = new HashMap<String, Integer>(roomDistances);
 	}

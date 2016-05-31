@@ -12,7 +12,18 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.stage.Screen;
 
+/**
+ * Main class used in JavaFX. Launches application based on
+ * structuring in Main.fxml and {@link Controller} methods.
+ * @author Jagan Prem
+ * @see Application
+ */
 public class View extends Application {
+	
+	/**
+	 * Start method used to create the JavaFX application.
+	 * @throws IOException When Main.FXML is not found.
+	 */
 	@Override
 	public void start(Stage primaryStage) throws IOException {
 		final Parent parent = FXMLLoader.load(getClass().getResource("../Main.fxml"));
